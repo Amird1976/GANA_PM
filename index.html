@@ -43,39 +43,16 @@
   #legend .sw{width:12px;height:12px;border-radius:4px}
   .dep-layer{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
 
-
-  .clickable{cursor:pointer}
-  .group-header{background:#eef2ff;font-weight:700}
-
-
-  .milestone{position:absolute;top:9px;width:16px;height:16px;background:#111827;transform:rotate(45deg);border-radius:3px;cursor:grab;box-shadow:0 1px 2px rgba(0,0,0,.12)}
-  .milestone.dragging{cursor:grabbing;opacity:.9}
-  .milestone .mlabel{position:absolute;left:18px;top:-2px;transform:rotate(-45deg);transform-origin:left top;font-size:10px;color:#111827;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-
 </style>
 </head>
 <body>
 <header>
-  <div style="font-size:12px;letter-spacing:2px;opacity:.85;text-align:left">AMIR DAVIDI TECHNOLOGIES</div>
   <h1>גאנט פרויקט – Ghana Energy CERT (Drag & Drop)</h1>
   <div class="meta">
     גרירה של ה-Bar מזיזה משימה (Start/End). גרירת קצה ימני/שמאלי משנה Duration.
     <span class="pill">נשמר מקומית בדפדפן</span>
   </div>
 </header>
-
-<div id="sidePanel" style="
-  position:fixed;top:0;right:-420px;width:420px;height:100%;
-  background:#ffffff;border-left:1px solid #e5e7eb;
-  box-shadow:-4px 0 12px rgba(0,0,0,.08);
-  transition:right .25s ease;z-index:9999;display:flex;flex-direction:column">
-  <div style="padding:14px 16px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
-    <strong>פרטי משימה</strong>
-    <button id="closePanel">✕</button>
-  </div>
-  <div id="panelBody" style="padding:14px 16px;overflow:auto;font-size:13px"></div>
-</div>
-
 
 <div class="wrap">
   <div class="controls">
@@ -87,7 +64,6 @@
       <option value="month">חודש (Month)</option>
     </select>
     <div id="legend" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"></div>
-    <button class="btn-primary" id="autoSchedule">Auto-Schedule</button>
     <button class="btn-primary" id="exportCsv">Export CSV</button>
     <button id="reset">איפוס</button>
   </div>
@@ -151,74 +127,6 @@ function depsLabel(t){
   return d.length > 30 ? (d.slice(0,30) + "…") : d;
 }
 
-function isMilestone(t){
-  // Milestone is a point-in-time marker (diamond). We treat as milestone only when duration is very small.
-  const dur = Number(t.duration ?? 1);
-  const n = ((t.notes||"") + " " + (t.name||"")).trim();
-  const flagged = /(milestone|אבן\s*דרך)/i.test(n);
-  return (dur === 0) || (flagged && dur <= 2);
-}
-function parseDepIds(depStr){
-  const d = String(depStr||"").trim();
-  if (!d) return [];
-  return d.split(/[,\s]+/).map(x=>x.trim()).filter(Boolean).map(x=>{
-    // keep only numeric id if present
-    const m = x.match(/^(\d+)$/);
-    return m ? m[1] : null;
-  }).filter(Boolean);
-}
-function autoScheduleAll(){
-  // Kahn topological scheduling: startOffset = max(dep.startOffset + dep.duration)
-  const byId = new Map(ALL.map(t=>[String(t.id), t]));
-  const indeg = new Map();
-  const succ = new Map();
-  ALL.forEach(t=>{
-    const tid = String(t.id);
-    const deps = parseDepIds(t.deps);
-    indeg.set(tid, deps.length);
-    deps.forEach(d=>{
-      if(!succ.has(d)) succ.set(d, []);
-      succ.get(d).push(tid);
-    });
-  });
-  const q = [];
-  indeg.forEach((v,k)=>{ if(v===0) q.push(k); });
-  const order = [];
-  while(q.length){
-    const x = q.shift();
-    order.push(x);
-    (succ.get(x)||[]).forEach(y=>{
-      indeg.set(y, indeg.get(y)-1);
-      if(indeg.get(y)===0) q.push(y);
-    });
-  }
-  // If cycle, fall back to ID sort
-  const ids = (order.length===ALL.length) ? order : ALL.map(t=>String(t.id)).sort((a,b)=>Number(a)-Number(b));
-  ids.forEach(id=>{
-    const t = byId.get(id);
-    if(!t) return;
-    const deps = parseDepIds(t.deps);
-    let best = 0;
-    deps.forEach(d=>{
-      const dt = byId.get(d);
-      if(!dt) return;
-      const dur = Math.max(0, Number(dt.duration||0));
-      best = Math.max(best, Number(dt.startOffset||0) + dur);
-    });
-    // Keep milestones at best too (duration can be 0)
-    t.startOffset = best;
-    calcDatesFromOffsets(t);
-  });
-  // Persist everything
-  const edits = {};
-  ALL.forEach(t=>{
-    edits[t.id] = { startOffset: t.startOffset, duration: t.duration, start: t.start, end: t.end };
-  });
-  saveEdits(edits);
-  render();
-}
-
-
 
 function loadEdits() {
   try {
@@ -241,8 +149,7 @@ function fmt(d) {
 }
 function calcDatesFromOffsets(t) {
   const s = new Date(MIN_START.getTime() + (t.startOffset||0)*MS_DAY);
-  const dur = Math.max(0, Number(t.duration ?? 1));
-  const e = new Date(s.getTime() + dur*MS_DAY);
+  const e = new Date(s.getTime() + Math.max(1,(t.duration||1))*MS_DAY);
   t.start = fmt(s);
   t.end = fmt(e);
 }
@@ -298,7 +205,7 @@ function persistOne(t) {
 }
 function findTask(id) { return ALL.find(x => String(x.id)===String(id)); }
 
-function attachDrag(barEl, pxPerDay, isMs=false) {
+function attachDrag(barEl, pxPerDay) {
   let mode = "move";
   let startX = 0;
   let origOffset = 0;
@@ -306,8 +213,7 @@ function attachDrag(barEl, pxPerDay, isMs=false) {
 
   function onPointerDown(e) {
     const handle = e.target?.dataset?.handle;
-    if (isMs) { mode = 'move'; }
-    else { mode = handle === 'left' ? 'resizeL' : (handle === 'right' ? 'resizeR' : 'move'); }
+    mode = handle === 'left' ? 'resizeL' : (handle === 'right' ? 'resizeR' : 'move');
     barEl.setPointerCapture(e.pointerId);
     barEl.classList.add('dragging');
     startX = e.clientX;
@@ -340,12 +246,8 @@ function attachDrag(barEl, pxPerDay, isMs=false) {
 
     calcDatesFromOffsets(t);
     barEl.style.left = (t.startOffset*pxPerDay)+'px';
-    if (!isMs) {
-      barEl.style.width = (Math.max(1,t.duration)*pxPerDay)+'px';
-      barEl.title = `${t.name} (Start: ${t.start}, End: ${t.end})`;
-    } else {
-      barEl.title = `${t.name} (Milestone) ${t.start}`;
-    }
+    barEl.style.width = (Math.max(1,t.duration)*pxPerDay)+'px';
+    barEl.title = `${t.name} (Start: ${t.start}, End: ${t.end})`;
   }
 
   function onPointerUp(e) {
@@ -395,47 +297,20 @@ function render() {
   }
 
 
-  
   const left = document.getElementById('left');
   left.innerHTML='';
   const h = document.createElement('div');
-  h.className='row group-header';
-  h.innerHTML = `<div class="meta">ID</div><div class="title">שלב / משימה</div><div class="meta">Owner</div>`;
+  h.className='row';
+  h.style.fontWeight='800';
+  h.innerHTML = `<div class="meta">ID</div><div class="title">משימה</div><div class="meta">Owner</div>`;
   left.appendChild(h);
 
-  // Group by Phase
-  const groups = {};
-  list.forEach(t=>{
-    const g = t.phase || 'Other';
-    if(!groups[g]) groups[g]=[];
-    groups[g].push(t);
+  list.forEach(t => {
+    const r = document.createElement('div');
+    r.className='row';
+    r.innerHTML = `<div class="meta">#${t.id}</div><div class="title">${t.name}</div><div class="meta">${t.owner||''}</div>`;
+    left.appendChild(r);
   });
-
-  Object.keys(groups).sort().forEach(phase=>{
-    const gh = document.createElement('div');
-    gh.className='row group-header clickable';
-    gh.innerHTML = `<div class="meta"></div><div class="title">▸ ${phase}</div><div class="meta">${groups[phase].length}</div>`;
-    left.appendChild(gh);
-
-    let open = false;
-    gh.onclick = ()=>{
-      open = !open;
-      gh.querySelector('.title').textContent = (open?'▾ ':'▸ ') + phase;
-      rows.forEach(r=>r.style.display = open?'flex':'none');
-    };
-
-    const rows=[];
-    groups[phase].forEach(t=>{
-      const r = document.createElement('div');
-      r.className='row clickable';
-      r.style.display='none';
-      r.innerHTML = `<div class="meta">#${t.id}</div><div class="title">${t.name}</div><div class="meta">${t.owner||''}</div>`;
-      r.onclick = ()=>openPanel(t);
-      rows.push(r);
-      left.appendChild(r);
-    });
-  });
-
 
   buildTicks(pxPerDay);
 
@@ -469,25 +344,6 @@ function render() {
     row.className='bar-row';
     row.style.width = width+'px';
 
-    const milestoneFlag = isMilestone(t);
-    if (milestoneFlag) {
-      // Milestone diamond
-      const ms = document.createElement('div');
-      ms.className='milestone';
-      ms.dataset.id = t.id;
-      ms.style.left = (t.startOffset*pxPerDay)+'px';
-      ms.title = `${t.name} (Milestone) ${t.start}`;
-      const lbl = document.createElement('div');
-      lbl.className='mlabel';
-      lbl.textContent = `#${t.id} · ${t.name}`;
-      ms.appendChild(lbl);
-      ms.addEventListener('click', ()=>openPanel(t));
-      attachDrag(ms, pxPerDay, true);
-      row.appendChild(ms);
-      bars.appendChild(row);
-      return;
-    }
-
     const bar = document.createElement('div');
     bar.className='bar';
     bar.dataset.id = t.id;
@@ -520,9 +376,7 @@ const hL = document.createElement('div');
     bar.appendChild(hR);
 
     bar.addEventListener('dblclick', () => {
-      openPanel(t);
-      return;
-      //\n${t.name}\nPhase: ${t.phase}\nOwner: ${t.owner}\nStart: ${t.start}\nEnd: ${t.end}\nDuration: ${t.duration}d\nDeps: ${t.deps||'-'}`);
+      alert(`Task #${t.id}\n${t.name}\nPhase: ${t.phase}\nOwner: ${t.owner}\nStart: ${t.start}\nEnd: ${t.end}\nDuration: ${t.duration}d\nDeps: ${t.deps||'-'}`);
     });
 
     attachDrag(bar, pxPerDay);
@@ -539,7 +393,7 @@ const hL = document.createElement('div');
   // clear previous lines (keep defs)
   Array.from(svg.querySelectorAll('path.dep')).forEach(p => p.remove());
   const centerY = (i) => (i*34 + 17);
-  const barEndX = (tt) => ((tt.startOffset + Math.max(0,Number(tt.duration||0))) * pxPerDay);
+  const barEndX = (tt) => ((tt.startOffset + Math.max(1,tt.duration)) * pxPerDay);
   const barStartX = (tt) => (tt.startOffset * pxPerDay);
   const visibleById = new Map(list.map((tt, i) => [String(tt.id), {t:tt, i}]));
   list.forEach((tt, i) => {
@@ -620,32 +474,10 @@ function resetAll() {
 document.getElementById('q').addEventListener('input', render);
 document.getElementById('ownerFilter').addEventListener('change', render);
 document.getElementById('zoom').addEventListener('change', render);
-document.getElementById('autoSchedule').addEventListener('click', autoScheduleAll);
 document.getElementById('exportCsv').addEventListener('click', exportCSV);
 document.getElementById('reset').addEventListener('click', resetAll);
 
 render();
-
-function openPanel(t){
-  const p = document.getElementById('sidePanel');
-  const b = document.getElementById('panelBody');
-  b.innerHTML = `
-    <div><strong>ID:</strong> ${t.id}</div>
-    <div><strong>שלב:</strong> ${t.phase}</div>
-    <div><strong>משימה:</strong> ${t.name}</div>
-    <div><strong>אחראי:</strong> ${t.owner}</div>
-    <div><strong>התחלה:</strong> ${t.start}</div>
-    <div><strong>סיום:</strong> ${t.end}</div>
-    <div><strong>משך:</strong> ${t.duration} ימים</div>
-    <div><strong>תלויות:</strong> ${t.deps||'-'}</div>
-    <div><strong>הערות:</strong><br>${t.notes||''}</div>
-  `;
-  p.style.right='0';
-}
-document.getElementById('closePanel').onclick = ()=>{
-  document.getElementById('sidePanel').style.right='-420px';
-};
-
 </script>
 </body>
 </html>
