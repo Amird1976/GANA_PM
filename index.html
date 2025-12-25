@@ -87,6 +87,7 @@
       <option value="month">חודש (Month)</option>
     </select>
     <div id="legend" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"></div>
+    <button class="btn-primary" id="expandAll">Expand All</button>
     <button class="btn-primary" id="autoSchedule">Auto-Schedule</button>
     <button class="btn-primary" id="exportCsv">Export CSV</button>
     <button id="reset">איפוס</button>
@@ -108,6 +109,10 @@
 
 <script>
 const MS_DAY = 86400000;
+
+// ===== Phase group registry for Expand All =====
+const PHASE_GROUPS = [];
+
 const MIN_START = new Date("2026-01-05");
 const MAX_END = new Date("2026-06-10");
 
@@ -404,12 +409,7 @@ function render() {
   left.appendChild(h);
 
   // Group by Phase
-  const groups = {};
-  list.forEach(t=>{
-    const g = t.phase || 'Other';
-    if(!groups[g]) groups[g]=[];
-    groups[g].push(t);
-  });
+  PHASE_GROUPS.length = 0;
 
   Object.keys(groups).sort().forEach(phase=>{
     const gh = document.createElement('div');
@@ -418,6 +418,7 @@ function render() {
     left.appendChild(gh);
 
     let open = false;
+    PHASE_GROUPS.push({toggle:()=>gh.onclick(), rows, header:gh});
     gh.onclick = ()=>{
       open = !open;
       gh.querySelector('.title').textContent = (open?'▾ ':'▸ ') + phase;
