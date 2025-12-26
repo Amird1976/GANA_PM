@@ -19,7 +19,7 @@
     --light-color: #f9fafb;
     --border-color: #e5e7eb;
     --card-bg: #ffffff;
-    --sidebar-width: 340px;
+    --sidebar-width: 380px;
   }
 
   * {
@@ -35,6 +35,7 @@
     line-height: 1.6;
     min-height: 100vh;
     direction: rtl;
+    overflow-x: hidden;
   }
 
   /* Header */
@@ -48,7 +49,7 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000;
   }
 
   .logo {
@@ -83,6 +84,7 @@
   .app-container {
     display: flex;
     min-height: calc(100vh - 70px);
+    overflow: hidden;
   }
 
   .sidebar {
@@ -90,15 +92,53 @@
     background: var(--card-bg);
     border-left: 1px solid var(--border-color);
     padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .sidebar-content {
+    flex: 1;
     overflow-y: auto;
-    box-shadow: -2px 0 8px rgba(0,0,0,0.05);
-    transition: transform 0.3s ease;
+    padding-right: 5px;
+  }
+
+  /* Scrollbar Styling */
+  .sidebar-content::-webkit-scrollbar,
+  .task-list::-webkit-scrollbar,
+  .timeline-scroll::-webkit-scrollbar,
+  .modal-body::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .sidebar-content::-webkit-scrollbar-track,
+  .task-list::-webkit-scrollbar-track,
+  .timeline-scroll::-webkit-scrollbar-track,
+  .modal-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+  }
+
+  .sidebar-content::-webkit-scrollbar-thumb,
+  .task-list::-webkit-scrollbar-thumb,
+  .timeline-scroll::-webkit-scrollbar-thumb,
+  .modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+
+  .sidebar-content::-webkit-scrollbar-thumb:hover,
+  .task-list::-webkit-scrollbar-thumb:hover,
+  .timeline-scroll::-webkit-scrollbar-thumb:hover,
+  .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
 
   .main-content {
     flex: 1;
     padding: 1.5rem;
-    overflow-x: auto;
+    overflow: auto;
+    min-width: 0;
   }
 
   /* Cards */
@@ -139,6 +179,7 @@
     align-items: center;
     gap: 8px;
     text-decoration: none;
+    white-space: nowrap;
   }
 
   .btn-primary {
@@ -280,9 +321,10 @@
 
   .timeline-scroll {
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 1rem;
-    min-height: 500px;
     position: relative;
+    min-height: 600px;
   }
 
   .timeline-grid {
@@ -293,12 +335,14 @@
     height: 100%;
     display: flex;
     pointer-events: none;
+    z-index: 1;
   }
 
   .timeline-day {
     border-right: 1px solid #e5e7eb;
     height: 100%;
     position: relative;
+    flex-shrink: 0;
   }
 
   .timeline-day.month-start {
@@ -332,6 +376,7 @@
     overflow: hidden;
     z-index: 5;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    min-width: 20px;
   }
 
   .task-bar:hover {
@@ -394,32 +439,6 @@
     background: #f8fafc;
   }
 
-  .task-handle-left, .task-handle-right {
-    position: absolute;
-    width: 8px;
-    height: 100%;
-    top: 0;
-    cursor: ew-resize;
-    opacity: 0;
-    transition: opacity 0.2s;
-    z-index: 10;
-  }
-
-  .task-handle-left {
-    left: 0;
-    border-radius: 6px 0 0 6px;
-  }
-
-  .task-handle-right {
-    right: 0;
-    border-radius: 0 6px 6px 0;
-  }
-
-  .task-bar:hover .task-handle-left,
-  .task-bar:hover .task-handle-right {
-    opacity: 0.5;
-  }
-
   /* Dependency Lines */
   .dependency-line {
     position: absolute;
@@ -433,8 +452,11 @@
 
   /* Task List */
   .task-list {
-    max-height: 600px;
+    max-height: 400px;
     overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-top: 1rem;
   }
 
   .task-item {
@@ -445,6 +467,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    min-height: 60px;
   }
 
   .task-item:hover {
@@ -460,6 +483,7 @@
     font-size: 0.95rem;
     margin-bottom: 4px;
     font-weight: 600;
+    line-height: 1.3;
   }
 
   .task-item .task-meta {
@@ -467,6 +491,7 @@
     color: #6b7280;
     display: flex;
     gap: 12px;
+    flex-wrap: wrap;
   }
 
   .task-item .task-actions {
@@ -483,9 +508,15 @@
   /* Charts */
   .charts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 1.25rem;
     margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 1200px) {
+    .charts-grid {
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
   }
 
   .chart-container {
@@ -536,7 +567,8 @@
     width: 100%;
     height: 100%;
     background: rgba(0,0,0,0.5);
-    z-index: 1000;
+    backdrop-filter: blur(2px);
+    z-index: 2000;
     align-items: center;
     justify-content: center;
   }
@@ -549,10 +581,11 @@
     background: white;
     border-radius: 12px;
     width: 90%;
-    max-width: 600px;
+    max-width: 700px;
     max-height: 90vh;
     overflow-y: auto;
     animation: modalSlideIn 0.3s ease;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
   }
 
   @keyframes modalSlideIn {
@@ -572,10 +605,17 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+    border-radius: 12px 12px 0 0;
   }
 
   .modal-body {
     padding: 1.5rem;
+    max-height: 60vh;
+    overflow-y: auto;
   }
 
   .modal-footer {
@@ -584,6 +624,10 @@
     display: flex;
     justify-content: flex-end;
     gap: 12px;
+    position: sticky;
+    bottom: 0;
+    background: white;
+    border-radius: 0 0 12px 12px;
   }
 
   .close-btn {
@@ -593,6 +637,12 @@
     cursor: pointer;
     color: #6b7280;
     line-height: 1;
+    padding: 4px;
+    border-radius: 4px;
+  }
+
+  .close-btn:hover {
+    background: #f3f4f6;
   }
 
   /* GitHub Integration */
@@ -604,6 +654,7 @@
     background: #f3f4f6;
     border-radius: 8px;
     font-size: 0.85rem;
+    white-space: nowrap;
   }
 
   .github-status.connected {
@@ -624,8 +675,38 @@
       max-height: 50vh;
     }
     
+    .sidebar-content {
+      max-height: calc(50vh - 3rem);
+    }
+    
     .charts-grid {
       grid-template-columns: 1fr;
+    }
+    
+    .timeline-scroll {
+      min-height: 400px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .app-header {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+    
+    .header-actions {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .btn-group {
+      justify-content: center;
+    }
+    
+    .modal-content {
+      width: 95%;
+      max-width: 95%;
     }
   }
 
@@ -650,7 +731,7 @@
     position: fixed;
     bottom: 20px;
     left: 20px;
-    z-index: 1001;
+    z-index: 3000;
   }
 
   .toast {
@@ -706,6 +787,7 @@
     padding: 1rem;
     text-align: center;
     border: 1px solid #e2e8f0;
+    min-width: 0;
   }
 
   .stat-value {
@@ -741,6 +823,12 @@
     flex-wrap: wrap;
     gap: 10px;
     margin: 1rem 0;
+    max-height: 150px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f8fafc;
   }
 
   .legend-item {
@@ -749,15 +837,17 @@
     gap: 6px;
     font-size: 0.8rem;
     padding: 4px 8px;
-    background: #f8fafc;
+    background: #ffffff;
     border-radius: 6px;
     border: 1px solid #e5e7eb;
+    min-width: 120px;
   }
 
   .legend-color {
     width: 12px;
     height: 12px;
     border-radius: 3px;
+    flex-shrink: 0;
   }
 
   /* Zoom Controls */
@@ -769,6 +859,7 @@
     padding: 6px 12px;
     border-radius: 8px;
     border: 1px solid #e5e7eb;
+    flex-wrap: wrap;
   }
 
   .zoom-controls button {
@@ -802,9 +893,135 @@
     white-space: nowrap;
     max-width: 300px;
   }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+  }
+
+  .empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #d1d5db;
+  }
+
+  /* Timeline Container Scrollbar */
+  .timeline-scroll::-webkit-scrollbar {
+    height: 10px;
+  }
+
+  .timeline-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 5px;
+  }
+
+  .timeline-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 5px;
+  }
+
+  .timeline-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* Task Row Container */
+  .tasks-container {
+    position: relative;
+    min-height: 40px;
+  }
+
+  /* Dependency SVG Layer */
+  #dependencyLayer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* View Controls */
+  .view-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 10px;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+
+  /* Debug Panel */
+  .debug-panel {
+    background: #1f2937;
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 10px;
+  }
+
+  .debug-panel.hidden {
+    display: none;
+  }
+
+  /* Loading Overlay */
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5000;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .loading-overlay.hidden {
+    display: none;
+  }
+
+  /* Task Editor Grid */
+  .task-editor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+
+  /* Compact View */
+  .compact .task-item {
+    padding: 8px 12px;
+    min-height: 50px;
+  }
+
+  .compact .task-item .task-info h4 {
+    font-size: 0.85rem;
+  }
+
+  .compact .task-item .task-meta {
+    font-size: 0.75rem;
+  }
 </style>
 </head>
 <body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay hidden" id="loadingOverlay">
+    <div class="loading"></div>
+    <div id="loadingMessage">טוען נתונים...</div>
+  </div>
+
   <!-- Header -->
   <header class="app-header">
     <div class="logo">
@@ -822,6 +1039,9 @@
       <button class="btn btn-outline" id="settingsBtn">
         <i class="fas fa-cog"></i> הגדרות
       </button>
+      <button class="btn btn-warning btn-sm" id="debugBtn">
+        <i class="fas fa-bug"></i> דיבאג
+      </button>
     </div>
   </header>
 
@@ -829,83 +1049,114 @@
   <div class="app-container">
     <!-- Sidebar -->
     <aside class="sidebar">
-      <!-- Search -->
-      <div class="card">
-        <div class="form-group">
-          <label class="form-label">חיפוש משימות</label>
-          <div class="search-box">
-            <input type="text" id="searchInput" class="form-control" placeholder="חפש לפי שם, אחראי או קטגוריה...">
-            <i class="fas fa-search"></i>
+      <div class="sidebar-content">
+        <!-- Search -->
+        <div class="card">
+          <div class="form-group">
+            <label class="form-label">חיפוש משימות</label>
+            <div class="search-box">
+              <input type="text" id="searchInput" class="form-control" placeholder="חפש לפי שם, אחראי או קטגוריה...">
+              <i class="fas fa-search"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card">
+          <h3 class="card-title"><i class="fas fa-filter"></i> סינון מתקדם</h3>
+          <div class="form-group">
+            <label class="form-label">קטגוריה</label>
+            <select id="categoryFilter" class="form-control">
+              <option value="">כל הקטגוריות</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">אחראי</label>
+            <select id="ownerFilter" class="form-control">
+              <option value="">כל האחראים</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">סטטוס</label>
+            <select id="statusFilter" class="form-control">
+              <option value="">כל הסטטוסים</option>
+              <option value="not-started">לא התחיל</option>
+              <option value="in-progress">בתהליך</option>
+              <option value="completed">הושלם</option>
+            </select>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-outline btn-sm" id="clearFiltersBtn">
+              <i class="fas fa-times"></i> נקה סינון
+            </button>
+            <button class="btn btn-outline btn-sm" id="showAllBtn">
+              <i class="fas fa-eye"></i> הצג הכל
+            </button>
+          </div>
+        </div>
+
+        <!-- GitHub Actions -->
+        <div class="card">
+          <h3 class="card-title"><i class="fab fa-github"></i> GitHub Actions</h3>
+          <div class="btn-group">
+            <button class="btn btn-primary btn-sm" id="loadFromGitHubBtn">
+              <i class="fas fa-cloud-download-alt"></i> טען מ-GitHub
+            </button>
+            <button class="btn btn-success btn-sm" id="saveToGitHubBtn">
+              <i class="fas fa-cloud-upload-alt"></i> שמור ל-GitHub
+            </button>
+            <button class="btn btn-outline btn-sm" id="syncBtn">
+              <i class="fas fa-sync-alt"></i> סנכרן
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+          <h3 class="card-title"><i class="fas fa-bolt"></i> פעולות מהירות</h3>
+          <div class="btn-group">
+            <button class="btn btn-success btn-sm" id="addTaskBtn">
+              <i class="fas fa-plus"></i> משימה חדשה
+            </button>
+            <button class="btn btn-outline btn-sm" id="exportBtn">
+              <i class="fas fa-download"></i> יצא CSV
+            </button>
+            <button class="btn btn-outline btn-sm" id="printBtn">
+              <i class="fas fa-print"></i> הדפס
+            </button>
+            <button class="btn btn-outline btn-sm" id="compactViewBtn">
+              <i class="fas fa-compress"></i> תצוגה קומפקטית
+            </button>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="card">
+          <h3 class="card-title"><i class="fas fa-palette"></i> מקרא צבעים</h3>
+          <div class="legend" id="phaseLegend">
+            <!-- Legend will be generated here -->
+          </div>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="card">
+          <h3 class="card-title"><i class="fas fa-chart-bar"></i> סיכום</h3>
+          <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="stat-card">
+              <div class="stat-value" id="filteredTasksCount">0</div>
+              <div class="stat-label">משימות מסוננות</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="visibleMilestones">0</div>
+              <div class="stat-label">אבני דרך</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Filters -->
-      <div class="card">
-        <h3 class="card-title"><i class="fas fa-filter"></i> סינון מתקדם</h3>
-        <div class="form-group">
-          <label class="form-label">קטגוריה</label>
-          <select id="categoryFilter" class="form-control">
-            <option value="">כל הקטגוריות</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">אחראי</label>
-          <select id="ownerFilter" class="form-control">
-            <option value="">כל האחראים</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">סטטוס</label>
-          <select id="statusFilter" class="form-control">
-            <option value="">כל הסטטוסים</option>
-            <option value="not-started">לא התחיל</option>
-            <option value="in-progress">בתהליך</option>
-            <option value="completed">הושלם</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- GitHub Actions -->
-      <div class="card">
-        <h3 class="card-title"><i class="fab fa-github"></i> GitHub Actions</h3>
-        <div class="btn-group">
-          <button class="btn btn-primary btn-sm" id="loadFromGitHubBtn">
-            <i class="fas fa-cloud-download-alt"></i> טען מ-GitHub
-          </button>
-          <button class="btn btn-success btn-sm" id="saveToGitHubBtn">
-            <i class="fas fa-cloud-upload-alt"></i> שמור ל-GitHub
-          </button>
-        </div>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="card">
-        <h3 class="card-title"><i class="fas fa-bolt"></i> פעולות מהירות</h3>
-        <div class="btn-group">
-          <button class="btn btn-success btn-sm" id="addTaskBtn">
-            <i class="fas fa-plus"></i> משימה חדשה
-          </button>
-          <button class="btn btn-outline btn-sm" id="exportBtn">
-            <i class="fas fa-download"></i> יצא CSV
-          </button>
-          <button class="btn btn-outline btn-sm" id="printBtn">
-            <i class="fas fa-print"></i> הדפס
-          </button>
-        </div>
-      </div>
-
-      <!-- Legend -->
-      <div class="card">
-        <h3 class="card-title"><i class="fas fa-palette"></i> מקרא צבעים</h3>
-        <div class="legend" id="phaseLegend">
-          <!-- Legend will be generated here -->
-        </div>
-      </div>
-
       <!-- Task List -->
-      <div class="card">
-        <h3 class="card-title"><i class="fas fa-tasks"></i> רשימת משימות</h3>
+      <div class="card" style="flex-shrink: 0;">
+        <h3 class="card-title"><i class="fas fa-tasks"></i> רשימת משימות <small>(<span id="taskListCount">0</span>)</small></h3>
         <div class="task-list" id="taskList">
           <!-- Tasks will be populated here -->
         </div>
@@ -914,6 +1165,37 @@
 
     <!-- Main Content -->
     <main class="main-content">
+      <!-- View Controls -->
+      <div class="view-controls">
+        <div class="zoom-controls">
+          <button id="zoomOutBtn" title="הקטן">
+            <i class="fas fa-search-minus"></i>
+          </button>
+          <span id="zoomLevel">100%</span>
+          <button id="zoomInBtn" title="הגדל">
+            <i class="fas fa-search-plus"></i>
+          </button>
+          <select id="timelineView" class="form-control form-control-sm">
+            <option value="week">שבועי</option>
+            <option value="month" selected>חודשי</option>
+            <option value="quarter">רבעוני</option>
+            <option value="year">שנתי</option>
+          </select>
+          <select id="pixelsPerDay" class="form-control form-control-sm">
+            <option value="10">10px ליום</option>
+            <option value="20" selected>20px ליום</option>
+            <option value="30">30px ליום</option>
+            <option value="40">40px ליום</option>
+          </select>
+        </div>
+        <button class="btn btn-outline btn-sm" id="fitToScreenBtn">
+          <i class="fas fa-expand"></i> התאם למסך
+        </button>
+        <button class="btn btn-outline btn-sm" id="showTodayBtn">
+          <i class="fas fa-calendar-day"></i> הצג היום
+        </button>
+      </div>
+
       <!-- Charts Dashboard -->
       <div class="charts-grid">
         <div class="card">
@@ -956,40 +1238,37 @@
             <div class="stat-value" id="dependenciesCount">0</div>
             <div class="stat-label">קשרי תלות</div>
           </div>
+          <div class="stat-card">
+            <div class="stat-value" id="tasksWithDeps">0</div>
+            <div class="stat-label">משימות עם תלות</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="avgDuration">0</div>
+            <div class="stat-label">ממוצע ימים</div>
+          </div>
         </div>
       </div>
 
       <!-- Timeline -->
-      <div class="card">
+      <div class="card timeline-container">
         <div class="timeline-header">
           <h3 class="card-title"><i class="fas fa-calendar-alt"></i> ציר זמן אינטראקטיבי</h3>
-          <div class="zoom-controls">
-            <button id="zoomOutBtn" title="הקטן">
-              <i class="fas fa-search-minus"></i>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span id="timelineRange" style="font-size: 0.85rem; color: #64748b;">טווח תאריכים: טוען...</span>
+            <button class="btn btn-outline btn-sm" id="exportTimelineBtn">
+              <i class="fas fa-image"></i> שמור כתמונה
             </button>
-            <span id="zoomLevel">100%</span>
-            <button id="zoomInBtn" title="הגדל">
-              <i class="fas fa-search-plus"></i>
-            </button>
-            <select id="timelineView" class="form-control form-control-sm">
-              <option value="week">שבועי</option>
-              <option value="month" selected>חודשי</option>
-              <option value="quarter">רבעוני</option>
-            </select>
           </div>
         </div>
         <div class="timeline-scroll" id="timelineScroll">
           <div id="timelineGrid" class="timeline-grid"></div>
-          <svg id="dependencyLayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
-            <defs>
-              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
-              </marker>
-            </defs>
-          </svg>
-          <div id="barsContainer" style="position: relative; height: 100%;">
+          <svg id="dependencyLayer"></svg>
+          <div id="barsContainer" class="tasks-container">
             <!-- Task bars will be rendered here -->
           </div>
+        </div>
+        <div style="padding: 10px; border-top: 1px solid var(--border-color); background: #f8fafc; font-size: 0.8rem; color: #64748b;">
+          <i class="fas fa-info-circle"></i> גרור משימות לשינוי תאריכים | לחץ פעמיים לעריכה | השתמש בגלגלת העכבר לגלילה
         </div>
       </div>
     </main>
@@ -1014,22 +1293,29 @@
         <div class="form-group">
           <label class="form-label">GitHub Token</label>
           <input type="password" id="githubToken" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+          <small style="color: #6b7280; display: block; margin-top: 4px;">Token עם הרשאות repo נדרש</small>
         </div>
-        <div class="form-group">
-          <label class="form-label">Repository Owner</label>
-          <input type="text" id="repoOwner" class="form-control" placeholder="Amird1976">
+        <div class="task-editor-grid">
+          <div class="form-group">
+            <label class="form-label">Repository Owner</label>
+            <input type="text" id="repoOwner" class="form-control" placeholder="Amird1976" value="Amird1976">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Repository Name</label>
+            <input type="text" id="repoName" class="form-control" placeholder="GANA_PM" value="GANA_PM">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Branch</label>
+            <input type="text" id="repoBranch" class="form-control" value="main" placeholder="main">
+          </div>
+          <div class="form-group">
+            <label class="form-label">נתיב לקובץ CSV</label>
+            <input type="text" id="filePath" class="form-control" value="tasks.csv" placeholder="tasks.csv">
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Repository Name</label>
-          <input type="text" id="repoName" class="form-control" placeholder="GANA_PM">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Branch</label>
-          <input type="text" id="repoBranch" class="form-control" value="main" placeholder="main">
-        </div>
-        <div class="form-group">
-          <label class="form-label">נתיב לקובץ CSV</label>
-          <input type="text" id="filePath" class="form-control" value="TASK.CSV" placeholder="TASK.CSV">
+        <div class="alert alert-warning" id="githubTestResult" style="display: none;">
+          <i class="fas fa-exclamation-triangle"></i>
+          <div id="githubTestMessage"></div>
         </div>
         <div class="form-group">
           <div class="progress-bar">
@@ -1058,33 +1344,39 @@
       </div>
       <div class="modal-body">
         <form id="taskForm">
-          <div class="form-group">
-            <label class="form-label">מספר משימה *</label>
-            <input type="text" id="taskId" class="form-control" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">שם משימה *</label>
-            <input type="text" id="taskName" class="form-control" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">קטגוריה/שלב</label>
-            <input type="text" id="taskPhase" class="form-control">
-          </div>
-          <div class="form-group">
-            <label class="form-label">אחראי</label>
-            <input type="text" id="taskOwner" class="form-control">
-          </div>
-          <div class="form-group">
-            <label class="form-label">תאריך התחלה</label>
-            <input type="date" id="taskStart" class="form-control">
-          </div>
-          <div class="form-group">
-            <label class="form-label">תאריך סיום</label>
-            <input type="date" id="taskEnd" class="form-control">
-          </div>
-          <div class="form-group">
-            <label class="form-label">משך (ימים)</label>
-            <input type="number" id="taskDuration" class="form-control" min="1" value="1">
+          <div class="task-editor-grid">
+            <div class="form-group">
+              <label class="form-label">מספר משימה *</label>
+              <input type="text" id="taskId" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">שם משימה *</label>
+              <input type="text" id="taskName" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">קטגוריה/שלב</label>
+              <input type="text" id="taskPhase" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">אחראי</label>
+              <input type="text" id="taskOwner" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">תאריך התחלה</label>
+              <input type="date" id="taskStart" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">תאריך סיום</label>
+              <input type="date" id="taskEnd" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">משך (ימים)</label>
+              <input type="number" id="taskDuration" class="form-control" min="1" value="1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Start Offset (ימים)</label>
+              <input type="number" id="taskStartOffset" class="form-control" min="0" value="0">
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">תלויות (מסיפים מופרדים בפסיק)</label>
@@ -1094,22 +1386,21 @@
             <label class="form-label">הערות</label>
             <textarea id="taskNotes" class="form-control" rows="3"></textarea>
           </div>
-          <div class="form-group">
-            <label class="form-label">Start Offset (ימים)</label>
-            <input type="number" id="taskStartOffset" class="form-control" min="0" value="0">
-          </div>
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="taskMilestone"> אבן דרך
-            </label>
-          </div>
-          <div class="form-group">
-            <label class="form-label">סטטוס</label>
-            <select id="taskStatus" class="form-control">
-              <option value="not-started">לא התחיל</option>
-              <option value="in-progress">בתהליך</option>
-              <option value="completed">הושלם</option>
-            </select>
+          <div class="task-editor-grid">
+            <div class="form-group">
+              <label class="form-label">סטטוס</label>
+              <select id="taskStatus" class="form-control">
+                <option value="not-started">לא התחיל</option>
+                <option value="in-progress">בתהליך</option>
+                <option value="completed">הושלם</option>
+              </select>
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px; padding-top: 20px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="taskMilestone" style="width: 18px; height: 18px;">
+                <span>אבן דרך</span>
+              </label>
+            </div>
           </div>
         </form>
       </div>
@@ -1125,22 +1416,52 @@
     </div>
   </div>
 
+  <!-- Debug Modal -->
+  <div class="modal" id="debugModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i class="fas fa-bug"></i> פאנל דיבאג</h2>
+        <button class="close-btn" onclick="closeModal('debugModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="debug-panel" id="debugPanel">
+          <div>=== מערכת Gantt Debug ===</div>
+          <div id="debugContent"></div>
+        </div>
+        <div class="btn-group" style="margin-top: 1rem;">
+          <button class="btn btn-outline btn-sm" onclick="clearDebug()">
+            <i class="fas fa-trash"></i> נקה
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="exportDebug()">
+            <i class="fas fa-download"></i> ייצא
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="testCSVParsing()">
+            <i class="fas fa-file-csv"></i> בדוק CSV
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="forceReload()">
+            <i class="fas fa-redo"></i> טען מחדש
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
     // ===== GLOBAL VARIABLES =====
     const STORAGE_KEYS = {
-      TASKS: 'gantt_tasks_v3',
-      GITHUB_SETTINGS: 'github_settings_v2',
-      EDIT_HISTORY: 'edit_history_v2'
+      TASKS: 'gantt_tasks_v4',
+      GITHUB_SETTINGS: 'github_settings_v3',
+      UI_SETTINGS: 'ui_settings_v1'
     };
 
     const COLORS = {
       phases: [
         '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444',
-        '#06b6d4', '#84cc16', '#f97316', '#8b5cf6', '#ec4899',
-        '#14b8a6', '#f43f5e', '#6366f1'
+        '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#14b8a6',
+        '#f43f5e', '#6366f1', '#8b5cf6', '#10b981', '#f59e0b'
       ],
       status: {
         'not-started': '#6b7280',
@@ -1156,78 +1477,162 @@
     let githubSettings = null;
     let chartInstances = {};
     let GH_SHA = null;
-    let MIN_DATE = new Date('2026-01-01');
-    let MAX_DATE = new Date('2026-12-31');
     let PIXELS_PER_DAY = 20;
+    let MIN_DATE = null;
+    let MAX_DATE = null;
+    let isCompactView = false;
+    let debugLogs = [];
 
     // ===== INITIALIZATION =====
     document.addEventListener('DOMContentLoaded', function() {
-      loadTasks();
-      loadGitHubSettings();
-      initEventListeners();
-      updateDashboard();
-      updateGitHubStatus();
-      
-      // Set up date pickers
-      flatpickr('#taskStart', { dateFormat: 'Y-m-d', locale: 'he' });
-      flatpickr('#taskEnd', { dateFormat: 'Y-m-d', locale: 'he' });
-      
-      // Auto-load from GitHub if settings exist
-      if (githubSettings && githubSettings.token) {
-        setTimeout(() => {
-          loadFromGitHub();
-        }, 1000);
-      }
+      initApp();
     });
+
+    async function initApp() {
+      showLoading('מאתחל מערכת...');
+      
+      try {
+        // Load all data
+        loadTasks();
+        loadGitHubSettings();
+        loadUISettings();
+        
+        // Initialize UI
+        initEventListeners();
+        updateDashboard();
+        updateGitHubStatus();
+        
+        // Set up date pickers
+        flatpickr('#taskStart', { 
+          dateFormat: 'Y-m-d', 
+          locale: 'he',
+          defaultDate: '2026-01-05'
+        });
+        flatpickr('#taskEnd', { 
+          dateFormat: 'Y-m-d', 
+          locale: 'he',
+          defaultDate: '2026-01-06'
+        });
+        
+        // Auto-load from GitHub if settings exist
+        if (githubSettings && githubSettings.token) {
+          setTimeout(() => {
+            loadFromGitHub();
+          }, 500);
+        } else {
+          // Show welcome message
+          setTimeout(() => {
+            showToast('ברוך הבא! הגדר את חיבור ה-GitHub כדי להתחיל.', 'info');
+          }, 1000);
+        }
+        
+      } catch (error) {
+        console.error('שגיאה באתחול:', error);
+        showToast('שגיאה באתחול המערכת', 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ===== LOADING FUNCTIONS =====
+    function showLoading(message = 'טוען...') {
+      const overlay = document.getElementById('loadingOverlay');
+      const messageEl = document.getElementById('loadingMessage');
+      messageEl.textContent = message;
+      overlay.classList.remove('hidden');
+    }
+
+    function hideLoading() {
+      const overlay = document.getElementById('loadingOverlay');
+      overlay.classList.add('hidden');
+    }
 
     // ===== TASK MANAGEMENT =====
     function loadTasks() {
-      const saved = localStorage.getItem(STORAGE_KEYS.TASKS);
-      if (saved) {
-        tasks = JSON.parse(saved);
-      } else {
-        // Load from default if available
-        loadDefaultTasks();
+      try {
+        const saved = localStorage.getItem(STORAGE_KEYS.TASKS);
+        if (saved) {
+          tasks = JSON.parse(saved);
+          logDebug(`נטענו ${tasks.length} משימות מהזיכרון המקומי`);
+        } else {
+          tasks = [];
+          logDebug('אין משימות שמורות, יצירת מערך ריק');
+        }
+        filteredTasks = [...tasks];
+      } catch (error) {
+        console.error('שגיאה בטעינת משימות:', error);
+        tasks = [];
+        filteredTasks = [];
       }
-      filteredTasks = [...tasks];
     }
 
     function saveTasks() {
-      localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
-      updateDashboard();
-    }
-
-    function loadDefaultTasks() {
-      // Default tasks for initial view
-      tasks = [
-        {
-          id: '1',
-          name: 'פתיחת פרויקט וניהול',
-          phase: '1. Management',
-          owner: 'צוות יעוץ',
-          start: '2026-01-05',
-          end: '2026-02-04',
-          duration: 30,
-          deps: '',
-          notes: '',
-          milestone: false,
-          status: 'not-started',
-          startOffset: 0
-        }
-      ];
+      try {
+        localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+        logDebug(`נשמרו ${tasks.length} משימות לזיכרון מקומי`);
+      } catch (error) {
+        console.error('שגיאה בשמירת משימות:', error);
+        showToast('שגיאה בשמירת המשימות', 'error');
+      }
     }
 
     // ===== GITHUB INTEGRATION =====
     function loadGitHubSettings() {
-      const saved = localStorage.getItem(STORAGE_KEYS.GITHUB_SETTINGS);
-      if (saved) {
-        githubSettings = JSON.parse(saved);
-        // Update modal fields
-        document.getElementById('githubToken').value = githubSettings.token || '';
-        document.getElementById('repoOwner').value = githubSettings.owner || '';
-        document.getElementById('repoName').value = githubSettings.repo || '';
-        document.getElementById('repoBranch').value = githubSettings.branch || 'main';
-        document.getElementById('filePath').value = githubSettings.filePath || 'TASK.CSV';
+      try {
+        const saved = localStorage.getItem(STORAGE_KEYS.GITHUB_SETTINGS);
+        if (saved) {
+          githubSettings = JSON.parse(saved);
+          
+          // Update modal fields
+          document.getElementById('githubToken').value = githubSettings.token || '';
+          document.getElementById('repoOwner').value = githubSettings.owner || 'Amird1976';
+          document.getElementById('repoName').value = githubSettings.repo || 'GANA_PM';
+          document.getElementById('repoBranch').value = githubSettings.branch || 'main';
+          document.getElementById('filePath').value = githubSettings.filePath || 'tasks.csv';
+          
+          logDebug('הגדרות GitHub נטענו מהזיכרון');
+        } else {
+          githubSettings = null;
+          logDebug('אין הגדרות GitHub שמורות');
+        }
+      } catch (error) {
+        console.error('שגיאה בטעינת הגדרות GitHub:', error);
+        githubSettings = null;
+      }
+    }
+
+    function loadUISettings() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEYS.UI_SETTINGS);
+        if (saved) {
+          const uiSettings = JSON.parse(saved);
+          currentZoom = uiSettings.zoom || 1.0;
+          PIXELS_PER_DAY = uiSettings.pixelsPerDay || 20;
+          isCompactView = uiSettings.compactView || false;
+          
+          document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+          document.getElementById('pixelsPerDay').value = PIXELS_PER_DAY;
+          
+          if (isCompactView) {
+            document.getElementById('taskList').classList.add('compact');
+            document.getElementById('compactViewBtn').innerHTML = '<i class="fas fa-expand"></i> תצוגה מלאה';
+          }
+        }
+      } catch (error) {
+        console.error('שגיאה בטעינת הגדרות UI:', error);
+      }
+    }
+
+    function saveUISettings() {
+      try {
+        const uiSettings = {
+          zoom: currentZoom,
+          pixelsPerDay: PIXELS_PER_DAY,
+          compactView: isCompactView
+        };
+        localStorage.setItem(STORAGE_KEYS.UI_SETTINGS, JSON.stringify(uiSettings));
+      } catch (error) {
+        console.error('שגיאה בשמירת הגדרות UI:', error);
       }
     }
 
@@ -1237,7 +1642,7 @@
         owner: document.getElementById('repoOwner').value.trim(),
         repo: document.getElementById('repoName').value.trim(),
         branch: document.getElementById('repoBranch').value.trim() || 'main',
-        filePath: document.getElementById('filePath').value.trim() || 'TASK.CSV'
+        filePath: document.getElementById('filePath').value.trim() || 'tasks.csv'
       };
       
       if (!settings.token || !settings.owner || !settings.repo) {
@@ -1245,25 +1650,38 @@
         return;
       }
 
-      localStorage.setItem(STORAGE_KEYS.GITHUB_SETTINGS, JSON.stringify(settings));
-      githubSettings = settings;
-      closeModal('githubModal');
-      updateGitHubStatus();
-      showToast('הגדרות GitHub נשמרו בהצלחה', 'success');
+      try {
+        localStorage.setItem(STORAGE_KEYS.GITHUB_SETTINGS, JSON.stringify(settings));
+        githubSettings = settings;
+        closeModal('githubModal');
+        updateGitHubStatus();
+        showToast('הגדרות GitHub נשמרו בהצלחה', 'success');
+        
+        // Try to load data automatically
+        setTimeout(() => {
+          loadFromGitHub();
+        }, 500);
+        
+      } catch (error) {
+        console.error('שגיאה בשמירת הגדרות GitHub:', error);
+        showToast('שגיאה בשמירת ההגדרות', 'error');
+      }
     }
 
     async function loadFromGitHub() {
-      if (!githubSettings) {
+      if (!githubSettings || !githubSettings.token) {
         showToast('נא להגדיר את פרטי GitHub תחילה', 'warning');
         document.getElementById('settingsBtn').click();
         return;
       }
 
+      showLoading('טוען נתונים מ-GitHub...');
+      
       try {
-        showToast('טוען נתונים מ-GitHub...', 'info');
-        
         const { token, owner, repo, branch, filePath } = githubSettings;
         const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`;
+        
+        logDebug(`שולח בקשה ל-GitHub: ${url}`);
         
         const response = await fetch(url, {
           headers: {
@@ -1272,31 +1690,74 @@
           }
         });
 
+        logDebug(`תגובת GitHub: ${response.status} ${response.statusText}`);
+        
         if (!response.ok) {
-          throw new Error(`שגיאה ${response.status}: לא ניתן לטעון את הקובץ`);
+          if (response.status === 404) {
+            throw new Error(`הקובץ ${filePath} לא נמצא ב-repository`);
+          } else if (response.status === 401 || response.status === 403) {
+            throw new Error('Token לא תקין או חסר הרשאות');
+          } else {
+            const errorText = await response.text();
+            throw new Error(`שגיאה ${response.status}: ${errorText.substring(0, 100)}`);
+          }
         }
 
         const data = await response.json();
         GH_SHA = data.sha;
         
-        // Decode base64 content with proper Hebrew encoding
-        const content = decodeBase64(data.content);
+        // Decode content
+        const base64Content = data.content.replace(/\s/g, '');
+        let content;
         
-        // Parse CSV with Hebrew headers
+        try {
+          content = atob(base64Content);
+        } catch (e) {
+          logDebug('נסיון פענוח חלופי...');
+          content = decodeURIComponent(escape(atob(base64Content)));
+        }
+        
+        // Remove BOM
+        if (content.charCodeAt(0) === 0xFEFF) {
+          content = content.substring(1);
+        }
+        
+        logDebug(`קובץ CSV נטען: ${content.length} תווים`);
+        logDebug(`שורה ראשונה: ${content.substring(0, 100)}...`);
+        
+        // Parse CSV
         const parsedTasks = parseCSVWithHebrewHeaders(content);
+        logDebug(`פענוח CSV: ${parsedTasks.length} משימות נמצאו`);
         
-        if (parsedTasks && parsedTasks.length > 0) {
+        if (parsedTasks.length > 0) {
+          // Show sample tasks in debug
+          parsedTasks.slice(0, 3).forEach((task, i) => {
+            logDebug(`דוגמה ${i+1}: ${task.id} - ${task.name}`);
+          });
+          
           tasks = parsedTasks;
+          
+          // Reset filters to show all tasks
+          resetFilters();
+          
+          // Save and update
           saveTasks();
-          showToast(`נטענו ${tasks.length} משימות בהצלחה מ-GitHub!`, 'success');
+          showToast(`✅ נטענו ${tasks.length} משימות בהצלחה מ-GitHub!`, 'success');
           updateGitHubStatus('connected', `מחובר - ${tasks.length} משימות`);
+          
+          // Log statistics
+          logDebug(`סטטיסטיקות: ${tasks.length} משימות, ${tasks.filter(t => t.milestone).length} אבני דרך`);
+          
         } else {
           showToast('הקובץ ריק או בפורמט לא תקין', 'warning');
         }
         
       } catch (error) {
-        console.error('שגיאה בטעינת נתונים:', error);
+        console.error('❌ שגיאה בטעינת נתונים:', error);
         showToast(`שגיאה בטעינת נתונים: ${error.message}`, 'error');
+        logDebug(`שגיאה: ${error.message}`);
+      } finally {
+        hideLoading();
       }
     }
 
@@ -1307,16 +1768,16 @@
         return;
       }
 
+      showLoading('שומר ל-GitHub...');
+      
       try {
-        showToast('שומר ל-GitHub...', 'info');
-        
-        // First, get current SHA if we don't have it
+        // Get current SHA if we don't have it
         if (!GH_SHA) {
           await getCurrentSHA();
         }
         
-        // Convert tasks to CSV format
-        const csvContent = convertToCSV();
+        // Convert tasks to CSV
+        const csvContent = convertTasksToCSV();
         const encodedContent = btoa(unescape(encodeURIComponent(csvContent)));
         
         const { token, owner, repo, branch, filePath } = githubSettings;
@@ -1332,6 +1793,8 @@
           payload.sha = GH_SHA;
         }
         
+        logDebug(`שומר ל-GitHub: ${tasks.length} משימות`);
+        
         const response = await fetch(url, {
           method: 'PUT',
           headers: {
@@ -1344,8 +1807,9 @@
         if (response.ok) {
           const result = await response.json();
           GH_SHA = result.content.sha;
-          showToast('הנתונים נשמרו בהצלחה ל-GitHub!', 'success');
+          showToast('✅ הנתונים נשמרו בהצלחה ל-GitHub!', 'success');
           updateGitHubStatus('connected', 'מחובר ומעודכן');
+          logDebug('שמירה ל-GitHub הצליחה');
         } else {
           const errorData = await response.json();
           throw new Error(errorData.message || 'שגיאה בשמירה ל-GitHub');
@@ -1354,6 +1818,9 @@
       } catch (error) {
         console.error('שגיאה בשמירה ל-GitHub:', error);
         showToast(`שגיאה בשמירה: ${error.message}`, 'error');
+        logDebug(`שגיאת שמירה: ${error.message}`);
+      } finally {
+        hideLoading();
       }
     }
 
@@ -1373,9 +1840,10 @@
         if (response.ok) {
           const data = await response.json();
           GH_SHA = data.sha;
+          logDebug(`SHA נוכחי: ${GH_SHA}`);
         }
       } catch (error) {
-        console.log('לא ניתן לקבל SHA נוכחי, יוצר קובץ חדש');
+        logDebug('לא ניתן לקבל SHA נוכחי');
       }
     }
 
@@ -1389,55 +1857,82 @@
         return;
       }
       
+      showLoading('בודק חיבור ל-GitHub...');
+      
       try {
-        showToast('בודק חיבור ל-GitHub...', 'info');
+        const testResult = document.getElementById('githubTestResult');
+        const testMessage = document.getElementById('githubTestMessage');
         
-        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+        // Test repository access
+        const repoUrl = `https://api.github.com/repos/${owner}/${repo}`;
+        const response = await fetch(repoUrl, {
           headers: {
             'Authorization': `token ${token}`
           }
         });
         
         if (response.ok) {
-          showToast('החיבור ל-GitHub עובד בהצלחה!', 'success');
+          // Test file access
+          const filePath = document.getElementById('filePath').value.trim() || 'tasks.csv';
+          const fileUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+          const fileResponse = await fetch(fileUrl, {
+            headers: {
+              'Authorization': `token ${token}`
+            }
+          });
+          
+          if (fileResponse.ok) {
+            testResult.className = 'alert alert-success';
+            testResult.style.display = 'flex';
+            testMessage.innerHTML = `<strong>✅ חיבור תקין!</strong><br>המערכת יכולה לגשת ל-Repository ולקובץ.`;
+            showToast('החיבור ל-GitHub תקין!', 'success');
+          } else if (fileResponse.status === 404) {
+            testResult.className = 'alert alert-warning';
+            testResult.style.display = 'flex';
+            testMessage.innerHTML = `<strong>⚠️ הקובץ לא נמצא</strong><br>החיבור ל-Repository תקין אבל הקובץ ${filePath} לא נמצא. המערכת תנסה ליצור אותו בעת השמירה הראשונה.`;
+            showToast('הקובץ לא נמצא, ייווצר בעת השמירה', 'warning');
+          } else {
+            throw new Error('לא ניתן לגשת לקובץ');
+          }
         } else {
           throw new Error('לא ניתן להתחבר ל-Repository');
         }
+        
       } catch (error) {
+        const testResult = document.getElementById('githubTestResult');
+        const testMessage = document.getElementById('githubTestMessage');
+        testResult.className = 'alert alert-error';
+        testResult.style.display = 'flex';
+        testMessage.innerHTML = `<strong>❌ שגיאה בחיבור</strong><br>${error.message}`;
         showToast(`שגיאה בחיבור: ${error.message}`, 'error');
+      } finally {
+        hideLoading();
       }
     }
 
     // ===== CSV PARSING AND GENERATION =====
-    function decodeBase64(base64) {
-      try {
-        // Remove BOM if present
-        const binary = atob(base64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
-        }
-        return new TextDecoder('utf-8').decode(bytes);
-      } catch (e) {
-        // Fallback for older browsers
-        return decodeURIComponent(escape(atob(base64)));
-      }
-    }
-
     function parseCSVWithHebrewHeaders(csvText) {
-      // Remove BOM if present
-      if (csvText.charCodeAt(0) === 0xFEFF) {
-        csvText = csvText.substring(1);
+      logDebug('מתחיל פענוח CSV...');
+      
+      // Remove BOM
+      csvText = csvText.replace(/^\uFEFF/, '');
+      
+      // Split into lines
+      const lines = csvText.split(/\r\n|\n|\r/);
+      logDebug(`מספר שורות בקובץ: ${lines.length}`);
+      
+      if (lines.length < 2) {
+        logDebug('הקובץ מכיל פחות מ-2 שורות');
+        return [];
       }
       
-      const lines = csvText.split('\n').filter(line => line.trim() !== '');
-      if (lines.length < 2) return [];
+      // Parse headers
+      const headers = parseCSVLine(lines[0]);
+      logDebug(`כותרות: ${headers.join(', ')}`);
       
-      // Parse headers (first line)
-      const headers = parseCSVLine(lines[0]).map(h => h.trim());
-      
-      // Map Hebrew headers to English field names
-      const headerMap = {
+      // Map Hebrew headers to English
+      const headerMap = {};
+      const hebrewToEnglish = {
         'מזהה': 'id',
         'קטגוריה/שלב': 'phase',
         'שם משימה': 'name',
@@ -1451,12 +1946,25 @@
         'milestone': 'milestone'
       };
       
-      const tasks = [];
+      headers.forEach((header, index) => {
+        const cleanHeader = header.trim();
+        headerMap[index] = hebrewToEnglish[cleanHeader] || cleanHeader;
+      });
       
+      const tasks = [];
+      let skippedRows = 0;
+      
+      // Process each data row
       for (let i = 1; i < lines.length; i++) {
-        const values = parseCSVLine(lines[i]);
-        if (values.length < 5) continue;
+        const line = lines[i].trim();
+        if (!line) {
+          skippedRows++;
+          continue;
+        }
         
+        const values = parseCSVLine(line);
+        
+        // Create task object with defaults
         const task = {
           id: '',
           name: '',
@@ -1472,34 +1980,59 @@
           status: 'not-started'
         };
         
-        // Map values based on headers
-        headers.forEach((header, index) => {
-          const fieldName = headerMap[header] || header;
-          if (task.hasOwnProperty(fieldName)) {
-            const value = values[index] || '';
-            task[fieldName] = value.trim();
+        // Map values
+        Object.keys(headerMap).forEach(index => {
+          const fieldName = headerMap[index];
+          if (task.hasOwnProperty(fieldName) && values[index] !== undefined) {
+            let value = values[index].trim().replace(/^"|"$/g, '');
+            
+            // Handle special cases
+            if (fieldName === 'milestone') {
+              task[fieldName] = (
+                value.toLowerCase() === 'true' || 
+                value === '1' || 
+                value.toLowerCase() === 'yes' ||
+                value.toLowerCase() === 'אמת'
+              );
+            } else if (fieldName === 'duration' || fieldName === 'startOffset') {
+              task[fieldName] = parseInt(value) || 0;
+            } else {
+              task[fieldName] = value;
+            }
           }
         });
         
-        // Convert numeric fields
-        task.duration = parseInt(task.duration) || 1;
-        task.startOffset = parseInt(task.startOffset) || 0;
-        task.milestone = task.milestone === 'true' || task.milestone === '1' || task.milestone === 'yes';
-        
-        // Calculate dates if not provided
+        // Calculate missing dates
         if (!task.start && task.startOffset !== undefined) {
-          const startDate = new Date('2026-01-05');
+          const baseDate = new Date('2026-01-05');
+          const startDate = new Date(baseDate);
           startDate.setDate(startDate.getDate() + task.startOffset);
           task.start = formatDate(startDate);
         }
         
         if (!task.end && task.start && task.duration) {
           const endDate = new Date(task.start);
-          endDate.setDate(endDate.getDate() + task.duration - 1);
+          endDate.setDate(endDate.getDate() + task.duration);
           task.end = formatDate(endDate);
         }
         
+        // Validate task
+        if (!task.id || !task.name) {
+          skippedRows++;
+          logDebug(`דילוג על שורה ${i+1}: חסר מזהה או שם`);
+          continue;
+        }
+        
         tasks.push(task);
+      }
+      
+      logDebug(`פענוח הושלם: ${tasks.length} משימות, ${skippedRows} שורות נדלגו`);
+      
+      if (tasks.length > 0) {
+        logDebug(`דוגמאות למשימות: 
+          1. ${tasks[0].id}: ${tasks[0].name}
+          2. ${tasks[1]?.id || 'N/A'}: ${tasks[1]?.name || 'N/A'}
+          3. ${tasks[2]?.id || 'N/A'}: ${tasks[2]?.name || 'N/A'}`);
       }
       
       return tasks;
@@ -1509,12 +2042,21 @@
       const values = [];
       let current = '';
       let inQuotes = false;
+      let quoteChar = '';
       
       for (let i = 0; i < line.length; i++) {
         const char = line[i];
         
-        if (char === '"') {
-          inQuotes = !inQuotes;
+        if ((char === '"' || char === "'") && !inQuotes) {
+          inQuotes = true;
+          quoteChar = char;
+        } else if (char === quoteChar && inQuotes) {
+          if (i + 1 < line.length && line[i + 1] === quoteChar) {
+            current += char;
+            i++;
+          } else {
+            inQuotes = false;
+          }
         } else if (char === ',' && !inQuotes) {
           values.push(current);
           current = '';
@@ -1527,13 +2069,13 @@
       return values;
     }
 
-    function convertToCSV() {
+    function convertTasksToCSV() {
       const headers = ['מזהה', 'קטגוריה/שלב', 'שם משימה', 'אחראי', 'תאריך התחלה', 'תאריך סיום', 'משך (ימים)', 'תלויות', 'הערות', 'startOffset', 'milestone'];
       
       const escapeCSV = (value) => {
         if (value === null || value === undefined) return '';
         const stringValue = String(value);
-        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')) {
           return '"' + stringValue.replace(/"/g, '""') + '"';
         }
         return stringValue;
@@ -1592,6 +2134,7 @@
       
       toastContainer.appendChild(toast);
       
+      // Auto-remove
       setTimeout(() => {
         if (toast.parentElement) {
           toast.remove();
@@ -1601,10 +2144,12 @@
 
     function openModal(modalId) {
       document.getElementById(modalId).classList.add('active');
+      document.body.style.overflow = 'hidden';
     }
 
     function closeModal(modalId) {
       document.getElementById(modalId).classList.remove('active');
+      document.body.style.overflow = '';
     }
 
     // ===== EVENT LISTENERS =====
@@ -1616,63 +2161,118 @@
 
       document.getElementById('loadFromGitHubBtn').addEventListener('click', loadFromGitHub);
       document.getElementById('saveToGitHubBtn').addEventListener('click', saveToGitHub);
+      document.getElementById('syncBtn').addEventListener('click', () => {
+        loadFromGitHub();
+        setTimeout(saveToGitHub, 1000);
+      });
 
       // Search and filter
       document.getElementById('searchInput').addEventListener('input', filterTasks);
       document.getElementById('categoryFilter').addEventListener('change', filterTasks);
       document.getElementById('ownerFilter').addEventListener('change', filterTasks);
       document.getElementById('statusFilter').addEventListener('change', filterTasks);
+      document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters);
+      document.getElementById('showAllBtn').addEventListener('click', resetFilters);
 
       // Task actions
       document.getElementById('addTaskBtn').addEventListener('click', addNewTask);
       document.getElementById('exportBtn').addEventListener('click', exportToCSV);
       document.getElementById('printBtn').addEventListener('click', printView);
+      document.getElementById('compactViewBtn').addEventListener('click', toggleCompactView);
+      document.getElementById('exportTimelineBtn').addEventListener('click', exportTimelineAsImage);
 
       // Timeline controls
       document.getElementById('zoomInBtn').addEventListener('click', () => changeZoom(0.1));
       document.getElementById('zoomOutBtn').addEventListener('click', () => changeZoom(-0.1));
       document.getElementById('timelineView').addEventListener('change', renderTimeline);
+      document.getElementById('pixelsPerDay').addEventListener('change', updatePixelsPerDay);
+      document.getElementById('fitToScreenBtn').addEventListener('click', fitToScreen);
+      document.getElementById('showTodayBtn').addEventListener('click', showToday);
+
+      // Debug
+      document.getElementById('debugBtn').addEventListener('click', showDebugPanel);
+
+      // Window events
+      window.addEventListener('resize', debounce(() => {
+        renderTimeline();
+      }, 250));
     }
 
     // ===== TASK FILTERING =====
     function filterTasks() {
-      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
       const category = document.getElementById('categoryFilter').value;
       const owner = document.getElementById('ownerFilter').value;
       const status = document.getElementById('statusFilter').value;
 
+      logDebug(`סינון: חיפוש="${searchTerm}", קטגוריה="${category}", אחראי="${owner}", סטטוס="${status}"`);
+
       filteredTasks = tasks.filter(task => {
+        if (!task || !task.id) return false;
+        
+        let match = true;
+        
         // Search term
-        if (searchTerm && !(
-          (task.name || '').toLowerCase().includes(searchTerm) ||
-          (task.phase || '').toLowerCase().includes(searchTerm) ||
-          (task.owner || '').toLowerCase().includes(searchTerm) ||
-          (task.id || '').toLowerCase().includes(searchTerm)
-        )) {
-          return false;
+        if (searchTerm) {
+          const searchFields = [
+            task.name || '',
+            task.phase || '',
+            task.owner || '',
+            task.id || '',
+            task.notes || ''
+          ];
+          
+          if (!searchFields.some(field => field.toLowerCase().includes(searchTerm))) {
+            match = false;
+          }
         }
-
+        
         // Category filter
-        if (category && task.phase !== category) {
-          return false;
+        if (match && category && task.phase !== category) {
+          match = false;
         }
-
+        
         // Owner filter
-        if (owner && task.owner !== owner) {
-          return false;
+        if (match && owner && task.owner !== owner) {
+          match = false;
         }
-
+        
         // Status filter
-        if (status && task.status !== status) {
-          return false;
+        if (match && status && task.status !== status) {
+          match = false;
         }
-
-        return true;
+        
+        return match;
       });
 
-      renderTaskList();
+      logDebug(`סינון הושלם: ${filteredTasks.length} מתוך ${tasks.length} משימות`);
+      
+      // Update UI
+      updateTaskList();
       renderTimeline();
       updateCharts();
+      updateStats();
+    }
+
+    function clearFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('categoryFilter').value = '';
+      document.getElementById('ownerFilter').value = '';
+      document.getElementById('statusFilter').value = '';
+      
+      filterTasks();
+      showToast('סינון נוקה', 'info');
+    }
+
+    function resetFilters() {
+      filteredTasks = [...tasks];
+      logDebug(`איפוס סינון: ${filteredTasks.length} משימות זמינות`);
+      
+      updateTaskList();
+      renderTimeline();
+      updateCharts();
+      updateStats();
+      showToast('כל המשימות מוצגות', 'info');
     }
 
     // ===== TASK CRUD OPERATIONS =====
@@ -1688,12 +2288,19 @@
       endDate.setDate(endDate.getDate() + 30);
       document.getElementById('taskEnd').value = formatDate(endDate);
       
+      // Generate new ID
+      const maxId = tasks.length > 0 ? Math.max(...tasks.map(t => parseInt(t.id) || 0)) : 0;
+      document.getElementById('taskId').value = (maxId + 1).toString();
+      
       openModal('taskModal');
     }
 
     function editTask(taskId) {
       const task = tasks.find(t => t.id === taskId);
-      if (!task) return;
+      if (!task) {
+        showToast('משימה לא נמצאה', 'error');
+        return;
+      }
 
       selectedTaskId = taskId;
       
@@ -1737,7 +2344,7 @@
         status: document.getElementById('taskStatus').value
       };
 
-      // Calculate duration from dates if provided
+      // Calculate duration from dates if both provided
       if (taskData.start && taskData.end) {
         const startDate = new Date(taskData.start);
         const endDate = new Date(taskData.end);
@@ -1750,13 +2357,16 @@
         const index = tasks.findIndex(t => t.id === selectedTaskId);
         if (index !== -1) {
           tasks[index] = { ...tasks[index], ...taskData };
+          logDebug(`משימה עודכנה: ${taskData.id} - ${taskData.name}`);
         }
       } else {
         // Add new task
         tasks.push(taskData);
+        logDebug(`משימה נוספה: ${taskData.id} - ${taskData.name}`);
       }
 
       saveTasks();
+      resetFilters();
       closeModal('taskModal');
       showToast('המשימה נשמרה בהצלחה', 'success');
     }
@@ -1768,14 +2378,30 @@
 
       tasks = tasks.filter(t => t.id !== selectedTaskId);
       saveTasks();
+      resetFilters();
       closeModal('taskModal');
       showToast('המשימה נמחקה בהצלחה', 'success');
     }
 
     // ===== RENDERING FUNCTIONS =====
-    function renderTaskList() {
+    function updateTaskList() {
       const taskList = document.getElementById('taskList');
+      const taskListCount = document.getElementById('taskListCount');
+      
       taskList.innerHTML = '';
+      taskListCount.textContent = filteredTasks.length;
+      
+      if (filteredTasks.length === 0) {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'empty-state';
+        emptyState.innerHTML = `
+          <i class="fas fa-tasks"></i>
+          <div style="margin-top: 10px;">אין משימות להצגה</div>
+          <small style="color: #9ca3af;">נסה לשנות את פרמטרי הסינון</small>
+        `;
+        taskList.appendChild(emptyState);
+        return;
+      }
 
       filteredTasks.forEach(task => {
         const taskItem = document.createElement('div');
@@ -1783,20 +2409,25 @@
         taskItem.onclick = () => editTask(task.id);
         
         const statusColor = COLORS.status[task.status] || '#6b7280';
+        const phaseColor = getPhaseColor(task.phase);
         
         taskItem.innerHTML = `
           <div class="task-info">
             <h4>${task.name}</h4>
             <div class="task-meta">
-              <span><i class="fas fa-user"></i> ${task.owner}</span>
-              <span><i class="fas fa-layer-group"></i> ${task.phase}</span>
+              <span><i class="fas fa-hashtag"></i> ${task.id}</span>
+              <span><i class="fas fa-user"></i> ${task.owner || 'ללא אחראי'}</span>
+              <span><i class="fas fa-layer-group"></i> ${task.phase || 'ללא קטגוריה'}</span>
               <span><i class="fas fa-calendar"></i> ${formatDisplayDate(task.start)}</span>
               ${task.milestone ? '<span><i class="fas fa-gem" style="color: #8b5cf6;"></i> אבן דרך</span>' : ''}
             </div>
           </div>
           <div class="task-actions">
-            <span style="color: ${statusColor};"><i class="fas fa-circle" style="font-size: 0.7rem;"></i></span>
-            <i class="fas fa-edit" style="color: #6b7280;"></i>
+            <span style="color: ${statusColor};" title="סטטוס: ${task.status}">
+              <i class="fas fa-circle" style="font-size: 0.7rem;"></i>
+            </span>
+            <span style="background-color: ${phaseColor}; width: 12px; height: 12px; border-radius: 3px;" title="קטגוריה: ${task.phase}"></span>
+            <i class="fas fa-edit" style="color: #6b7280;" title="ערוך משימה"></i>
           </div>
         `;
         
@@ -1805,28 +2436,46 @@
 
       updateFilterOptions();
       updateLegend();
+      updateVisibleStats();
     }
 
     function renderTimeline() {
       const timelineScroll = document.getElementById('timelineScroll');
       const timelineGrid = document.getElementById('timelineGrid');
       const barsContainer = document.getElementById('barsContainer');
+      const timelineRange = document.getElementById('timelineRange');
       
       // Clear previous content
       timelineGrid.innerHTML = '';
       barsContainer.innerHTML = '';
       
-      // Calculate date range
-      const allDates = tasks.flatMap(t => [new Date(t.start), new Date(t.end)]);
-      const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
-      const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
+      if (filteredTasks.length === 0) {
+        timelineRange.textContent = 'אין משימות להצגה';
+        return;
+      }
+
+      // Calculate date range from filtered tasks
+      const taskDates = filteredTasks.flatMap(task => {
+        const dates = [];
+        if (task.start) dates.push(new Date(task.start));
+        if (task.end) dates.push(new Date(task.end));
+        return dates;
+      }).filter(date => !isNaN(date.getTime()));
       
-      // Add some padding
-      minDate.setDate(minDate.getDate() - 7);
-      maxDate.setDate(maxDate.getDate() + 7);
+      if (taskDates.length === 0) {
+        timelineRange.textContent = 'אין תאריכים זמינים';
+        return;
+      }
+      
+      MIN_DATE = new Date(Math.min(...taskDates.map(d => d.getTime())));
+      MAX_DATE = new Date(Math.max(...taskDates.map(d => d.getTime())));
+      
+      // Add padding
+      MIN_DATE.setDate(MIN_DATE.getDate() - 7);
+      MAX_DATE.setDate(MAX_DATE.getDate() + 7);
       
       // Calculate total days
-      const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24));
+      const totalDays = Math.ceil((MAX_DATE - MIN_DATE) / (1000 * 60 * 60 * 24));
       
       // Set container width
       const containerWidth = totalDays * PIXELS_PER_DAY * currentZoom;
@@ -1834,19 +2483,22 @@
       
       // Create grid
       for (let i = 0; i <= totalDays; i++) {
-        const currentDate = new Date(minDate);
+        const currentDate = new Date(MIN_DATE);
         currentDate.setDate(currentDate.getDate() + i);
         
         const dayDiv = document.createElement('div');
         dayDiv.className = 'timeline-day';
         dayDiv.style.width = (PIXELS_PER_DAY * currentZoom) + 'px';
+        dayDiv.style.flexShrink = '0';
         
         if (currentDate.getDate() === 1) {
           dayDiv.classList.add('month-start');
-        }
-        
-        // Add label for first day of month or every 7 days
-        if (currentDate.getDate() === 1 || i % 7 === 0) {
+          
+          const label = document.createElement('div');
+          label.className = 'timeline-day-label';
+          label.textContent = formatMonthYear(currentDate);
+          dayDiv.appendChild(label);
+        } else if (i % 7 === 0) {
           const label = document.createElement('div');
           label.className = 'timeline-day-label';
           label.textContent = formatDisplayDate(currentDate);
@@ -1860,7 +2512,13 @@
       filteredTasks.forEach((task, index) => {
         const taskStart = new Date(task.start);
         const taskEnd = new Date(task.end);
-        const daysFromStart = Math.floor((taskStart - minDate) / (1000 * 60 * 60 * 24));
+        
+        if (isNaN(taskStart.getTime()) || isNaN(taskEnd.getTime())) {
+          logDebug(`תאריך לא תקין למשימה ${task.id}: ${task.start} - ${task.end}`);
+          return;
+        }
+        
+        const daysFromStart = Math.floor((taskStart - MIN_DATE) / (1000 * 60 * 60 * 24));
         const taskDuration = Math.max(1, Math.ceil((taskEnd - taskStart) / (1000 * 60 * 60 * 24)) + 1);
         
         const taskBar = document.createElement('div');
@@ -1877,27 +2535,8 @@
         const width = taskDuration * PIXELS_PER_DAY * currentZoom;
         
         taskBar.style.left = left + 'px';
-        taskBar.style.width = width + 'px';
-        taskBar.style.top = (index * 40) + 'px';
-        
-        // Add handles for non-milestone tasks
-        if (!task.milestone) {
-          const handleLeft = document.createElement('div');
-          handleLeft.className = 'task-handle-left';
-          handleLeft.style.backgroundColor = phaseColor;
-          handleLeft.dataset.handle = 'left';
-          
-          const handleRight = document.createElement('div');
-          handleRight.className = 'task-handle-right';
-          handleRight.style.backgroundColor = phaseColor;
-          handleRight.dataset.handle = 'right';
-          
-          taskBar.appendChild(handleLeft);
-          taskBar.appendChild(handleRight);
-          
-          // Add drag listeners
-          makeDraggable(taskBar, task);
-        }
+        taskBar.style.width = Math.max(20, width) + 'px';
+        taskBar.style.top = (index * 44) + 'px';
         
         // Add content
         const label = document.createElement('div');
@@ -1905,112 +2544,119 @@
         label.innerHTML = `<span class="task-id">${task.id}</span> ${task.name}`;
         taskBar.appendChild(label);
         
+        // Add tooltip
+        taskBar.title = `${task.name}\nקטגוריה: ${task.phase}\nאחראי: ${task.owner}\nתאריך: ${formatDisplayDate(task.start)} - ${formatDisplayDate(task.end)}\nמשך: ${task.duration} ימים\nסטטוס: ${task.status}`;
+        
         // Add click listener
         taskBar.addEventListener('click', (e) => {
-          if (!e.target.classList.contains('task-handle-left') && 
-              !e.target.classList.contains('task-handle-right')) {
+          if (!e.target.classList.contains('task-handle')) {
             editTask(task.id);
           }
         });
         
-        // Add tooltip
-        taskBar.title = `${task.name}\nקטגוריה: ${task.phase}\nאחראי: ${task.owner}\nתאריך: ${task.start} - ${task.end}\nמשך: ${task.duration} ימים`;
+        // Add drag listeners for non-milestone tasks
+        if (!task.milestone) {
+          makeTaskDraggable(taskBar, task);
+        }
         
         barsContainer.appendChild(taskBar);
       });
       
       // Render dependency lines
-      renderDependencies(minDate);
+      renderDependencies();
+      
+      // Update range display
+      timelineRange.textContent = `טווח: ${formatDisplayDate(MIN_DATE)} - ${formatDisplayDate(MAX_DATE)} (${totalDays} ימים)`;
+      
+      logDebug(`טיימלין: ${filteredTasks.length} משימות, ${totalDays} ימים`);
     }
 
-    function makeDraggable(taskBar, task) {
+    function makeTaskDraggable(taskBar, task) {
       let isDragging = false;
-      let dragType = '';
       let startX = 0;
       let startLeft = 0;
-      let startWidth = 0;
       
-      const handles = taskBar.querySelectorAll('.task-handle-left, .task-handle-right');
-      
-      handles.forEach(handle => {
-        handle.addEventListener('mousedown', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
+      taskBar.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Left click only
+        
+        isDragging = true;
+        startX = e.clientX;
+        startLeft = parseFloat(taskBar.style.left);
+        
+        taskBar.classList.add('dragging');
+        document.body.style.cursor = 'grabbing';
+        
+        e.preventDefault();
+        
+        const onMouseMove = (e) => {
+          if (!isDragging) return;
           
-          isDragging = true;
-          dragType = e.target.dataset.handle;
-          startX = e.clientX;
-          startLeft = parseFloat(taskBar.style.left);
-          startWidth = parseFloat(taskBar.style.width);
+          const deltaX = e.clientX - startX;
+          const deltaDays = Math.round(deltaX / (PIXELS_PER_DAY * currentZoom));
           
-          taskBar.classList.add('dragging');
+          const taskIndex = tasks.findIndex(t => t.id === task.id);
+          if (taskIndex === -1) return;
           
-          document.addEventListener('mousemove', onMouseMove);
-          document.addEventListener('mouseup', onMouseUp);
-        });
+          const newStartOffset = Math.max(0, (task.startOffset || 0) + deltaDays);
+          tasks[taskIndex].startOffset = newStartOffset;
+          
+          // Update dates
+          const baseDate = new Date('2026-01-05');
+          const startDate = new Date(baseDate);
+          startDate.setDate(startDate.getDate() + newStartOffset);
+          tasks[taskIndex].start = formatDate(startDate);
+          
+          const endDate = new Date(startDate);
+          endDate.setDate(endDate.getDate() + tasks[taskIndex].duration);
+          tasks[taskIndex].end = formatDate(endDate);
+          
+          // Update position
+          taskBar.style.left = (startLeft + deltaX) + 'px';
+          
+          // Update dependencies
+          renderDependencies();
+        };
+        
+        const onMouseUp = () => {
+          if (!isDragging) return;
+          
+          isDragging = false;
+          taskBar.classList.remove('dragging');
+          document.body.style.cursor = '';
+          
+          // Save changes
+          saveTasks();
+          renderTimeline();
+          
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        };
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
       });
       
-      function onMouseMove(e) {
-        if (!isDragging) return;
-        
-        const deltaX = e.clientX - startX;
-        const deltaDays = Math.round(deltaX / (PIXELS_PER_DAY * currentZoom));
-        
-        const taskIndex = tasks.findIndex(t => t.id === task.id);
-        if (taskIndex === -1) return;
-        
-        if (dragType === 'left') {
-          // Resize from left
-          const newStartOffset = Math.max(0, task.startOffset + deltaDays);
-          const newDuration = Math.max(1, task.duration - deltaDays);
-          
-          if (newDuration >= 1) {
-            tasks[taskIndex].startOffset = newStartOffset;
-            tasks[taskIndex].duration = newDuration;
-            
-            // Update date
-            const startDate = new Date('2026-01-05');
-            startDate.setDate(startDate.getDate() + newStartOffset);
-            tasks[taskIndex].start = formatDate(startDate);
-            
-            const endDate = new Date(startDate);
-            endDate.setDate(endDate.getDate() + newDuration - 1);
-            tasks[taskIndex].end = formatDate(endDate);
-          }
-        } else if (dragType === 'right') {
-          // Resize from right
-          const newDuration = Math.max(1, task.duration + deltaDays);
-          tasks[taskIndex].duration = newDuration;
-          
-          const endDate = new Date(task.start);
-          endDate.setDate(endDate.getDate() + newDuration - 1);
-          tasks[taskIndex].end = formatDate(endDate);
-        }
-        
-        saveTasks();
-        renderTimeline();
-      }
-      
-      function onMouseUp() {
-        isDragging = false;
-        taskBar.classList.remove('dragging');
-        
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-      }
+      taskBar.style.cursor = 'grab';
     }
 
-    function renderDependencies(minDate) {
+    function renderDependencies() {
       const svg = document.getElementById('dependencyLayer');
-      // Clear previous lines
-      svg.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/></marker></defs>';
+      svg.innerHTML = `
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+          </marker>
+        </defs>
+      `;
+      
+      if (!MIN_DATE || !MAX_DATE) return;
       
       filteredTasks.forEach(task => {
-        if (!task.deps) return;
+        if (!task.deps || task.deps.trim() === '') return;
         
-        const deps = task.deps.split(',').map(d => d.trim()).filter(d => d !== '');
+        const dependencies = task.deps.split(',').map(d => d.trim()).filter(d => d !== '');
         
-        deps.forEach(depId => {
+        dependencies.forEach(depId => {
           const sourceTask = filteredTasks.find(t => t.id === depId);
           const targetTask = task;
           
@@ -2027,13 +2673,20 @@
           const sourceEnd = new Date(sourceTask.end);
           const targetStart = new Date(targetTask.start);
           
-          const sourceDaysFromStart = Math.floor((sourceEnd - minDate) / (1000 * 60 * 60 * 24));
-          const targetDaysFromStart = Math.floor((targetStart - minDate) / (1000 * 60 * 60 * 24));
+          if (isNaN(sourceStart.getTime()) || isNaN(sourceEnd.getTime()) || isNaN(targetStart.getTime())) {
+            return;
+          }
+          
+          const sourceDaysFromStart = Math.floor((sourceEnd - MIN_DATE) / (1000 * 60 * 60 * 24));
+          const targetDaysFromStart = Math.floor((targetStart - MIN_DATE) / (1000 * 60 * 60 * 24));
           
           const x1 = sourceDaysFromStart * PIXELS_PER_DAY * currentZoom;
           const x2 = targetDaysFromStart * PIXELS_PER_DAY * currentZoom;
-          const y1 = sourceIndex * 40 + 20;
-          const y2 = targetIndex * 40 + 20;
+          const y1 = sourceIndex * 44 + 22;
+          const y2 = targetIndex * 44 + 22;
+          
+          // Only draw if target is after source
+          if (x2 <= x1) return;
           
           // Create line
           const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -2051,7 +2704,7 @@
 
     function updateCharts() {
       // Category chart
-      const categoryData = groupByPhase();
+      const categoryData = getCategoryData();
       const categoryCtx = document.getElementById('categoryChart').getContext('2d');
       
       if (chartInstances.categoryChart) {
@@ -2061,10 +2714,10 @@
       chartInstances.categoryChart = new Chart(categoryCtx, {
         type: 'doughnut',
         data: {
-          labels: categoryData.labels,
+          labels: categoryData.labels.slice(0, 10),
           datasets: [{
-            data: categoryData.values,
-            backgroundColor: categoryData.colors,
+            data: categoryData.values.slice(0, 10),
+            backgroundColor: categoryData.colors.slice(0, 10),
             borderWidth: 1
           }]
         },
@@ -2073,15 +2726,19 @@
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              position: 'bottom',
-              rtl: true
+              position: 'right',
+              rtl: true,
+              labels: {
+                boxWidth: 12,
+                padding: 10
+              }
             }
           }
         }
       });
       
       // Owner chart
-      const ownerData = groupByOwner();
+      const ownerData = getOwnerData();
       const ownerCtx = document.getElementById('ownerChart').getContext('2d');
       
       if (chartInstances.ownerChart) {
@@ -2091,10 +2748,10 @@
       chartInstances.ownerChart = new Chart(ownerCtx, {
         type: 'bar',
         data: {
-          labels: ownerData.labels,
+          labels: ownerData.labels.slice(0, 8),
           datasets: [{
             label: 'מספר משימות',
-            data: ownerData.values,
+            data: ownerData.values.slice(0, 8),
             backgroundColor: '#3b82f6',
             borderColor: '#1d4ed8',
             borderWidth: 1
@@ -2124,7 +2781,6 @@
     }
 
     function updateTimelineChart() {
-      // This is a simplified timeline chart - you can enhance it
       const timelineCtx = document.getElementById('timelineChart').getContext('2d');
       
       if (chartInstances.timelineChart) {
@@ -2133,7 +2789,7 @@
       
       // Group tasks by month
       const monthlyData = {};
-      tasks.forEach(task => {
+      filteredTasks.forEach(task => {
         if (!task.start) return;
         const month = task.start.substring(0, 7); // YYYY-MM
         monthlyData[month] = (monthlyData[month] || 0) + 1;
@@ -2145,7 +2801,7 @@
       chartInstances.timelineChart = new Chart(timelineCtx, {
         type: 'line',
         data: {
-          labels: months,
+          labels: months.map(m => m.substring(5) + '/' + m.substring(2, 4)),
           datasets: [{
             label: 'משימות לפי חודש',
             data: counts,
@@ -2173,9 +2829,9 @@
     }
 
     // ===== UTILITY FUNCTIONS =====
-    function groupByPhase() {
+    function getCategoryData() {
       const groups = {};
-      tasks.forEach(task => {
+      filteredTasks.forEach(task => {
         const phase = task.phase || 'ללא קטגוריה';
         groups[phase] = (groups[phase] || 0) + 1;
       });
@@ -2189,14 +2845,14 @@
       };
     }
 
-    function groupByOwner() {
+    function getOwnerData() {
       const groups = {};
-      tasks.forEach(task => {
+      filteredTasks.forEach(task => {
         const owner = task.owner || 'ללא אחראי';
         groups[owner] = (groups[owner] || 0) + 1;
       });
       
-      const sorted = Object.entries(groups).sort((a, b) => b[1] - a[1]).slice(0, 10);
+      const sorted = Object.entries(groups).sort((a, b) => b[1] - a[1]);
       
       return {
         labels: sorted.map(([owner]) => owner),
@@ -2227,24 +2883,34 @@
       const categoryFilter = document.getElementById('categoryFilter');
       const categories = Array.from(new Set(tasks.map(t => t.phase).filter(p => p))).sort();
       
+      const currentCategory = categoryFilter.value;
       categoryFilter.innerHTML = '<option value="">כל הקטגוריות</option>';
       categories.forEach(cat => {
-        categoryFilter.innerHTML += `<option value="${cat}">${cat}</option>`;
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        if (cat === currentCategory) option.selected = true;
+        categoryFilter.appendChild(option);
       });
 
       // Update owner filter
       const ownerFilter = document.getElementById('ownerFilter');
       const owners = Array.from(new Set(tasks.map(t => t.owner).filter(o => o))).sort();
       
+      const currentOwner = ownerFilter.value;
       ownerFilter.innerHTML = '<option value="">כל האחראים</option>';
       owners.forEach(owner => {
-        ownerFilter.innerHTML += `<option value="${owner}">${owner}</option>`;
+        const option = document.createElement('option');
+        option.value = owner;
+        option.textContent = owner;
+        if (owner === currentOwner) option.selected = true;
+        ownerFilter.appendChild(option);
       });
     }
 
     function updateLegend() {
       const legend = document.getElementById('phaseLegend');
-      const phases = Array.from(new Set(tasks.map(t => t.phase).filter(p => p))).sort();
+      const phases = Array.from(new Set(filteredTasks.map(t => t.phase).filter(p => p))).sort();
       
       legend.innerHTML = '';
       phases.forEach((phase, index) => {
@@ -2256,17 +2922,16 @@
         `;
         legend.appendChild(item);
       });
-    }
-
-    function changeZoom(delta) {
-      currentZoom = Math.max(0.5, Math.min(3, currentZoom + delta));
-      document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
-      renderTimeline();
+      
+      if (phases.length === 0) {
+        legend.innerHTML = '<div style="color: #6b7280; text-align: center; width: 100%;">אין קטגוריות להצגה</div>';
+      }
     }
 
     function formatDate(date) {
       if (!date) return '';
       const d = new Date(date);
+      if (isNaN(d.getTime())) return '';
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
@@ -2276,11 +2941,92 @@
     function formatDisplayDate(dateStr) {
       if (!dateStr) return '';
       const date = new Date(dateStr);
-      return date.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' });
+      if (isNaN(date.getTime())) return '';
+      return date.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    }
+
+    function formatMonthYear(date) {
+      return date.toLocaleDateString('he-IL', { month: 'short', year: 'numeric' });
+    }
+
+    function changeZoom(delta) {
+      currentZoom = Math.max(0.3, Math.min(3, currentZoom + delta));
+      document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+      saveUISettings();
+      renderTimeline();
+    }
+
+    function updatePixelsPerDay() {
+      PIXELS_PER_DAY = parseInt(document.getElementById('pixelsPerDay').value) || 20;
+      saveUISettings();
+      renderTimeline();
+    }
+
+    function fitToScreen() {
+      const timelineScroll = document.getElementById('timelineScroll');
+      const containerWidth = timelineScroll.clientWidth;
+      
+      if (!MIN_DATE || !MAX_DATE || containerWidth === 0) return;
+      
+      const totalDays = Math.ceil((MAX_DATE - MIN_DATE) / (1000 * 60 * 60 * 24));
+      const neededPixelsPerDay = containerWidth / totalDays;
+      
+      // Find closest preset
+      const presets = [10, 20, 30, 40];
+      let closest = presets[0];
+      let minDiff = Math.abs(neededPixelsPerDay - closest);
+      
+      for (const preset of presets) {
+        const diff = Math.abs(neededPixelsPerDay - preset);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = preset;
+        }
+      }
+      
+      PIXELS_PER_DAY = closest;
+      document.getElementById('pixelsPerDay').value = PIXELS_PER_DAY;
+      currentZoom = 1.0;
+      document.getElementById('zoomLevel').textContent = '100%';
+      
+      saveUISettings();
+      renderTimeline();
+      showToast('מותאם למסך', 'info');
+    }
+
+    function showToday() {
+      const today = new Date();
+      if (!MIN_DATE || !MAX_DATE) return;
+      
+      const daysFromStart = Math.floor((today - MIN_DATE) / (1000 * 60 * 60 * 24));
+      const scrollLeft = daysFromStart * PIXELS_PER_DAY * currentZoom;
+      
+      const timelineScroll = document.getElementById('timelineScroll');
+      timelineScroll.scrollLeft = scrollLeft - timelineScroll.clientWidth / 2;
+      
+      showToast('מוצג היום', 'info');
+    }
+
+    function toggleCompactView() {
+      const taskList = document.getElementById('taskList');
+      const compactBtn = document.getElementById('compactViewBtn');
+      
+      isCompactView = !isCompactView;
+      
+      if (isCompactView) {
+        taskList.classList.add('compact');
+        compactBtn.innerHTML = '<i class="fas fa-expand"></i> תצוגה מלאה';
+      } else {
+        taskList.classList.remove('compact');
+        compactBtn.innerHTML = '<i class="fas fa-compress"></i> תצוגה קומפקטית';
+      }
+      
+      saveUISettings();
+      showToast(`תצוגה ${isCompactView ? 'קומפקטית' : 'מלאה'}`, 'info');
     }
 
     function exportToCSV() {
-      const csvContent = convertToCSV();
+      const csvContent = convertTasksToCSV();
       const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -2295,24 +3041,136 @@
       window.print();
     }
 
-    function updateDashboard() {
-      // Update stats
+    function exportTimelineAsImage() {
+      showToast('פונקציה בהכנה', 'info');
+      // TODO: Implement screenshot of timeline
+    }
+
+    // ===== STATISTICS =====
+    function updateStats() {
+      // Total tasks
       document.getElementById('totalTasks').textContent = tasks.length;
-      document.getElementById('milestonesCount').textContent = tasks.filter(t => t.milestone).length;
-      document.getElementById('activeTasks').textContent = tasks.filter(t => t.status === 'in-progress').length;
       
-      // Count dependencies
+      // Milestones
+      const milestones = tasks.filter(t => t.milestone).length;
+      document.getElementById('milestonesCount').textContent = milestones;
+      
+      // Active tasks (in-progress)
+      const activeTasks = tasks.filter(t => t.status === 'in-progress').length;
+      document.getElementById('activeTasks').textContent = activeTasks;
+      
+      // Dependencies count
       const depsCount = tasks.reduce((acc, task) => {
         if (!task.deps) return acc;
         const deps = task.deps.split(',').filter(d => d.trim() !== '');
         return acc + deps.length;
       }, 0);
       document.getElementById('dependenciesCount').textContent = depsCount;
+      
+      // Tasks with dependencies
+      const tasksWithDeps = tasks.filter(t => t.deps && t.deps.trim() !== '').length;
+      document.getElementById('tasksWithDeps').textContent = tasksWithDeps;
+      
+      // Average duration
+      const avgDuration = tasks.length > 0 
+        ? Math.round(tasks.reduce((sum, t) => sum + (t.duration || 1), 0) / tasks.length)
+        : 0;
+      document.getElementById('avgDuration').textContent = avgDuration;
+    }
 
-      // Render everything
-      renderTaskList();
+    function updateVisibleStats() {
+      document.getElementById('filteredTasksCount').textContent = filteredTasks.length;
+      
+      const visibleMilestones = filteredTasks.filter(t => t.milestone).length;
+      document.getElementById('visibleMilestones').textContent = visibleMilestones;
+    }
+
+    function updateDashboard() {
+      updateStats();
+      updateVisibleStats();
+      updateTaskList();
       renderTimeline();
       updateCharts();
+    }
+
+    // ===== DEBUG FUNCTIONS =====
+    function logDebug(message) {
+      const timestamp = new Date().toLocaleTimeString('he-IL');
+      const logEntry = `[${timestamp}] ${message}`;
+      debugLogs.push(logEntry);
+      
+      // Keep only last 100 entries
+      if (debugLogs.length > 100) {
+        debugLogs.shift();
+      }
+      
+      console.log(logEntry);
+    }
+
+    function showDebugPanel() {
+      const debugContent = document.getElementById('debugContent');
+      debugContent.innerHTML = '';
+      
+      // System info
+      debugContent.innerHTML += `<div><strong>מידע מערכת:</strong></div>`;
+      debugContent.innerHTML += `<div>משימות: ${tasks.length} (מסוננות: ${filteredTasks.length})</div>`;
+      debugContent.innerHTML += `<div>GitHub: ${githubSettings ? 'מחובר' : 'לא מחובר'}</div>`;
+      debugContent.innerHTML += `<div>Zoom: ${currentZoom.toFixed(1)}x</div>`;
+      debugContent.innerHTML += `<div>פיקסלים ליום: ${PIXELS_PER_DAY}</div>`;
+      
+      // Debug logs
+      debugContent.innerHTML += `<div style="margin-top: 10px;"><strong>לוגים:</strong></div>`;
+      const recentLogs = debugLogs.slice(-20).reverse();
+      recentLogs.forEach(log => {
+        debugContent.innerHTML += `<div style="font-size: 11px; color: #d1d5db;">${log}</div>`;
+      });
+      
+      openModal('debugModal');
+    }
+
+    function clearDebug() {
+      debugLogs = [];
+      showDebugPanel();
+    }
+
+    function exportDebug() {
+      const debugText = debugLogs.join('\n');
+      const blob = new Blob([debugText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gantt_debug_${new Date().toISOString().split('T')[0]}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function testCSVParsing() {
+      const testCSV = `מזהה,קטגוריה/שלב,שם משימה,אחראי,תאריך התחלה,תאריך סיום,משך (ימים),תלויות,הערות,startOffset,milestone
+1,1. Management,פתיחת פרויקט וניהול,צוות יעוץ,2026-01-05,2026-02-04,30,,,0,
+2,1.1 Admin,פגישת קיק-אוף,צוות יעוץ,2026-01-05,2026-01-07,2,,,0,true`;
+      
+      const parsed = parseCSVWithHebrewHeaders(testCSV);
+      logDebug(`בדיקת CSV: ${parsed.length} משימות נמצאו`);
+      showDebugPanel();
+    }
+
+    function forceReload() {
+      localStorage.removeItem(STORAGE_KEYS.TASKS);
+      localStorage.removeItem(STORAGE_KEYS.GITHUB_SETTINGS);
+      location.reload();
+    }
+
+    // ===== HELPER FUNCTIONS =====
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
     }
 
     // Initial render
