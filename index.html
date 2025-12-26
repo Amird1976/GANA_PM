@@ -4,9 +4,12 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Gantt CERT Professional - סינכרון עם GitHub</title>
+<!-- Polyfill for older browsers -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=Array.from,Array.prototype.includes,Object.assign,String.prototype.includes,String.prototype.startsWith,Promise,fetch"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/he.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   :root {
@@ -1182,6 +1185,7 @@
             <option value="year">שנתי</option>
           </select>
           <select id="pixelsPerDay" class="form-control form-control-sm">
+            <option value="5">5px ליום</option>
             <option value="10">10px ליום</option>
             <option value="20" selected>20px ליום</option>
             <option value="30">30px ליום</option>
@@ -1452,9 +1456,9 @@
   <script>
     // ===== GLOBAL VARIABLES =====
     const STORAGE_KEYS = {
-      TASKS: 'gantt_tasks_v4',
-      GITHUB_SETTINGS: 'github_settings_v3',
-      UI_SETTINGS: 'ui_settings_v1'
+      TASKS: 'gantt_tasks_v5',
+      GITHUB_SETTINGS: 'github_settings_v4',
+      UI_SETTINGS: 'ui_settings_v2'
     };
 
     const COLORS = {
@@ -1482,55 +1486,69 @@
     let MAX_DATE = null;
     let isCompactView = false;
     let debugLogs = [];
+    let flatpickrInstances = {};
+    let isInitialized = false;
 
     // ===== INITIALIZATION =====
     document.addEventListener('DOMContentLoaded', function() {
-      initApp();
+      // המתן מעט לטעינת כל הספריות
+      setTimeout(initApp, 100);
     });
 
     async function initApp() {
+      if (isInitialized) return;
+      
       showLoading('מאתחל מערכת...');
       
       try {
-        // Load all data
+        // המתן לספריות חיצוניות
+        await waitForLibraries();
+        
+        // טען נתונים
         loadTasks();
         loadGitHubSettings();
         loadUISettings();
         
-        // Initialize UI
+        // אתחול UI
+        initDatePickers();
         initEventListeners();
         updateDashboard();
         updateGitHubStatus();
         
-        // Set up date pickers
-        flatpickr('#taskStart', { 
-          dateFormat: 'Y-m-d', 
-          locale: 'he',
-          defaultDate: '2026-01-05'
-        });
-        flatpickr('#taskEnd', { 
-          dateFormat: 'Y-m-d', 
-          locale: 'he',
-          defaultDate: '2026-01-06'
-        });
+        // הגדר את zoom מינימום ל-10%
+        currentZoom = Math.max(0.1, currentZoom);
+        document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
         
-        // Auto-load from GitHub if settings exist
+        // טען אוטומטית מ-GitHub אם יש הגדרות
         if (githubSettings && githubSettings.token) {
-          setTimeout(() => {
-            loadFromGitHub();
-          }, 500);
+          setTimeout(async () => {
+            try {
+              await loadFromGitHub();
+            } catch (error) {
+              console.log('טעינה אוטומטית מ-GitHub נכשלה, המשך עם נתונים מקומיים');
+              logDebug(`טעינה אוטומטית נכשלה: ${error.message}`);
+            }
+          }, 1500);
         } else {
-          // Show welcome message
+          // הצג הודעת ברוך הבא
           setTimeout(() => {
-            showToast('ברוך הבא! הגדר את חיבור ה-GitHub כדי להתחיל.', 'info');
+            if (tasks.length === 0) {
+              showToast('ברוך הבא! הגדר את חיבור ה-GitHub כדי לטעון משימות קיימות.', 'info');
+            }
           }, 1000);
         }
         
+        isInitialized = true;
+        logDebug('המערכת אותחלה בהצלחה');
+        
       } catch (error) {
-        console.error('שגיאה באתחול:', error);
-        showToast('שגיאה באתחול המערכת', 'error');
+        console.error('שגיאה קריטית באתחול:', error);
+        showToast('שגיאה באתחול המערכת. נסה לרענן את הדף.', 'error');
+        logDebug(`שגיאת אתחול: ${error.message}`);
       } finally {
-        hideLoading();
+        setTimeout(() => {
+          hideLoading();
+        }, 500);
       }
     }
 
@@ -1547,6 +1565,82 @@
       overlay.classList.add('hidden');
     }
 
+    // ===== LIBRARY WAIT FUNCTIONS =====
+    function waitForLibraries() {
+      return new Promise((resolve) => {
+        const checkLibraries = () => {
+          const hasFlatpickr = window.flatpickr !== undefined;
+          const hasChartJS = window.Chart !== undefined;
+          
+          if (hasFlatpickr && hasChartJS) {
+            logDebug('כל הספריות נטענו');
+            resolve();
+          } else {
+            logDebug(`מחכה לספריות... Flatpickr: ${hasFlatpickr}, Chart.js: ${hasChartJS}`);
+            setTimeout(checkLibraries, 100);
+          }
+        };
+        checkLibraries();
+      });
+    }
+
+    function initDatePickers() {
+      try {
+        if (!window.flatpickr) {
+          logDebug('Flatpickr לא זמין, דילוג על אתחול תאריכים');
+          return;
+        }
+        
+        // הגדר את השפה העברית
+        if (flatpickr.l10ns && flatpickr.l10ns.he) {
+          flatpickr.localize(flatpickr.l10ns.he);
+        }
+        
+        const today = new Date();
+        const defaultStart = new Date(today);
+        defaultStart.setDate(defaultStart.getDate() + 1);
+        const defaultEnd = new Date(defaultStart);
+        defaultEnd.setDate(defaultEnd.getDate() + 30);
+        
+        // אתחול datepicker לתאריך התחלה
+        const startInput = document.getElementById('taskStart');
+        if (startInput) {
+          flatpickrInstances.start = flatpickr(startInput, {
+            dateFormat: 'Y-m-d',
+            locale: 'he',
+            defaultDate: formatDate(defaultStart),
+            allowInput: true,
+            onChange: function(selectedDates, dateStr) {
+              // עדכון אוטומטי של תאריך הסיום
+              const endPicker = flatpickrInstances.end;
+              if (endPicker && selectedDates[0]) {
+                const endDate = new Date(selectedDates[0]);
+                const duration = parseInt(document.getElementById('taskDuration').value) || 1;
+                endDate.setDate(endDate.getDate() + duration);
+                endPicker.setDate(endDate);
+              }
+            }
+          });
+        }
+        
+        // אתחול datepicker לתאריך סיום
+        const endInput = document.getElementById('taskEnd');
+        if (endInput) {
+          flatpickrInstances.end = flatpickr(endInput, {
+            dateFormat: 'Y-m-d',
+            locale: 'he',
+            defaultDate: formatDate(defaultEnd),
+            allowInput: true
+          });
+        }
+        
+        logDebug('Datepickers אותחלו בהצלחה');
+      } catch (error) {
+        console.error('שגיאה באתחול datepickers:', error);
+        logDebug(`שגיאת datepicker: ${error.message}`);
+      }
+    }
+
     // ===== TASK MANAGEMENT =====
     function loadTasks() {
       try {
@@ -1555,14 +1649,45 @@
           tasks = JSON.parse(saved);
           logDebug(`נטענו ${tasks.length} משימות מהזיכרון המקומי`);
         } else {
-          tasks = [];
-          logDebug('אין משימות שמורות, יצירת מערך ריק');
+          // נתוני דוגמה אם אין נתונים שמורים
+          tasks = [
+            {
+              id: '1',
+              name: 'פגישת קיק-אוף',
+              phase: '1. Management',
+              owner: 'צוות יעוץ',
+              start: '2026-01-05',
+              end: '2026-01-07',
+              duration: 2,
+              deps: '',
+              notes: 'פגישת פתיחה רשמית',
+              startOffset: 0,
+              milestone: true,
+              status: 'not-started'
+            },
+            {
+              id: '2',
+              name: 'ניתוח צרכים',
+              phase: '1.1 Admin',
+              owner: 'צוות טכני',
+              start: '2026-01-08',
+              end: '2026-01-15',
+              duration: 7,
+              deps: '1',
+              notes: 'ניתוח צרכים טכניים וארגוניים',
+              startOffset: 3,
+              milestone: false,
+              status: 'in-progress'
+            }
+          ];
+          logDebug('יצרנו נתוני דוגמה כי אין משימות שמורות');
         }
         filteredTasks = [...tasks];
       } catch (error) {
         console.error('שגיאה בטעינת משימות:', error);
         tasks = [];
         filteredTasks = [];
+        logDebug(`שגיאת טעינת משימות: ${error.message}`);
       }
     }
 
@@ -1583,7 +1708,7 @@
         if (saved) {
           githubSettings = JSON.parse(saved);
           
-          // Update modal fields
+          // עדכן שדות במודל
           document.getElementById('githubToken').value = githubSettings.token || '';
           document.getElementById('repoOwner').value = githubSettings.owner || 'Amird1976';
           document.getElementById('repoName').value = githubSettings.repo || 'GANA_PM';
@@ -1606,7 +1731,7 @@
         const saved = localStorage.getItem(STORAGE_KEYS.UI_SETTINGS);
         if (saved) {
           const uiSettings = JSON.parse(saved);
-          currentZoom = uiSettings.zoom || 1.0;
+          currentZoom = Math.max(0.1, uiSettings.zoom || 1.0); // מינימום 10%
           PIXELS_PER_DAY = uiSettings.pixelsPerDay || 20;
           isCompactView = uiSettings.compactView || false;
           
@@ -1657,7 +1782,7 @@
         updateGitHubStatus();
         showToast('הגדרות GitHub נשמרו בהצלחה', 'success');
         
-        // Try to load data automatically
+        // נסה לטעון נתונים אוטומטית
         setTimeout(() => {
           loadFromGitHub();
         }, 500);
@@ -1679,7 +1804,7 @@
       
       try {
         const { token, owner, repo, branch, filePath } = githubSettings;
-        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`;
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}?ref=${branch}`;
         
         logDebug(`שולח בקשה ל-GitHub: ${url}`);
         
@@ -1706,7 +1831,7 @@
         const data = await response.json();
         GH_SHA = data.sha;
         
-        // Decode content
+        // פענוח תוכן
         const base64Content = data.content.replace(/\s/g, '');
         let content;
         
@@ -1717,36 +1842,27 @@
           content = decodeURIComponent(escape(atob(base64Content)));
         }
         
-        // Remove BOM
+        // הסר BOM אם קיים
         if (content.charCodeAt(0) === 0xFEFF) {
           content = content.substring(1);
         }
         
         logDebug(`קובץ CSV נטען: ${content.length} תווים`);
-        logDebug(`שורה ראשונה: ${content.substring(0, 100)}...`);
         
-        // Parse CSV
+        // פענוח CSV
         const parsedTasks = parseCSVWithHebrewHeaders(content);
         logDebug(`פענוח CSV: ${parsedTasks.length} משימות נמצאו`);
         
         if (parsedTasks.length > 0) {
-          // Show sample tasks in debug
-          parsedTasks.slice(0, 3).forEach((task, i) => {
-            logDebug(`דוגמה ${i+1}: ${task.id} - ${task.name}`);
-          });
-          
           tasks = parsedTasks;
           
-          // Reset filters to show all tasks
+          // איפוס פילטרים להצגת כל המשימות
           resetFilters();
           
-          // Save and update
+          // שמירה ועדכון
           saveTasks();
           showToast(`✅ נטענו ${tasks.length} משימות בהצלחה מ-GitHub!`, 'success');
           updateGitHubStatus('connected', `מחובר - ${tasks.length} משימות`);
-          
-          // Log statistics
-          logDebug(`סטטיסטיקות: ${tasks.length} משימות, ${tasks.filter(t => t.milestone).length} אבני דרך`);
           
         } else {
           showToast('הקובץ ריק או בפורמט לא תקין', 'warning');
@@ -1771,17 +1887,17 @@
       showLoading('שומר ל-GitHub...');
       
       try {
-        // Get current SHA if we don't have it
+        // קבל SHA נוכחי אם אין לנו
         if (!GH_SHA) {
           await getCurrentSHA();
         }
         
-        // Convert tasks to CSV
+        // המרת משימות ל-CSV
         const csvContent = convertTasksToCSV();
         const encodedContent = btoa(unescape(encodeURIComponent(csvContent)));
         
         const { token, owner, repo, branch, filePath } = githubSettings;
-        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}`;
         
         const payload = {
           message: `Gantt Update: ${new Date().toLocaleString('he-IL')}`,
@@ -1829,7 +1945,7 @@
       
       try {
         const { token, owner, repo, branch, filePath } = githubSettings;
-        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`;
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}?ref=${branch}`;
         
         const response = await fetch(url, {
           headers: {
@@ -1863,7 +1979,7 @@
         const testResult = document.getElementById('githubTestResult');
         const testMessage = document.getElementById('githubTestMessage');
         
-        // Test repository access
+        // בדיקת גישה ל-repository
         const repoUrl = `https://api.github.com/repos/${owner}/${repo}`;
         const response = await fetch(repoUrl, {
           headers: {
@@ -1872,9 +1988,9 @@
         });
         
         if (response.ok) {
-          // Test file access
+          // בדיקת גישה לקובץ
           const filePath = document.getElementById('filePath').value.trim() || 'tasks.csv';
-          const fileUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+          const fileUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}`;
           const fileResponse = await fetch(fileUrl, {
             headers: {
               'Authorization': `token ${token}`
@@ -1912,130 +2028,130 @@
 
     // ===== CSV PARSING AND GENERATION =====
     function parseCSVWithHebrewHeaders(csvText) {
-      logDebug('מתחיל פענוח CSV...');
-      
-      // Remove BOM
-      csvText = csvText.replace(/^\uFEFF/, '');
-      
-      // Split into lines
-      const lines = csvText.split(/\r\n|\n|\r/);
-      logDebug(`מספר שורות בקובץ: ${lines.length}`);
-      
-      if (lines.length < 2) {
-        logDebug('הקובץ מכיל פחות מ-2 שורות');
-        return [];
-      }
-      
-      // Parse headers
-      const headers = parseCSVLine(lines[0]);
-      logDebug(`כותרות: ${headers.join(', ')}`);
-      
-      // Map Hebrew headers to English
-      const headerMap = {};
-      const hebrewToEnglish = {
-        'מזהה': 'id',
-        'קטגוריה/שלב': 'phase',
-        'שם משימה': 'name',
-        'אחראי': 'owner',
-        'תאריך התחלה': 'start',
-        'תאריך סיום': 'end',
-        'משך (ימים)': 'duration',
-        'תלויות': 'deps',
-        'הערות': 'notes',
-        'startOffset': 'startOffset',
-        'milestone': 'milestone'
-      };
-      
-      headers.forEach((header, index) => {
-        const cleanHeader = header.trim();
-        headerMap[index] = hebrewToEnglish[cleanHeader] || cleanHeader;
-      });
-      
-      const tasks = [];
-      let skippedRows = 0;
-      
-      // Process each data row
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) {
-          skippedRows++;
-          continue;
+      try {
+        logDebug('מתחיל פענוח CSV...');
+        
+        // הסר BOM
+        csvText = csvText.replace(/^\uFEFF/, '');
+        
+        // פיצול לשורות
+        const lines = csvText.split(/\r\n|\n|\r/);
+        logDebug(`מספר שורות בקובץ: ${lines.length}`);
+        
+        if (lines.length < 2) {
+          logDebug('הקובץ מכיל פחות מ-2 שורות');
+          return [];
         }
         
-        const values = parseCSVLine(line);
+        // פענוח כותרות
+        const headers = parseCSVLine(lines[0]);
+        logDebug(`כותרות: ${headers.join(', ')}`);
         
-        // Create task object with defaults
-        const task = {
-          id: '',
-          name: '',
-          phase: '',
-          owner: '',
-          start: '',
-          end: '',
-          duration: 1,
-          deps: '',
-          notes: '',
-          startOffset: 0,
-          milestone: false,
-          status: 'not-started'
+        // מיפוי כותרות עבריות לאנגלית
+        const headerMap = {};
+        const hebrewToEnglish = {
+          'מזהה': 'id',
+          'קטגוריה/שלב': 'phase',
+          'שם משימה': 'name',
+          'אחראי': 'owner',
+          'תאריך התחלה': 'start',
+          'תאריך סיום': 'end',
+          'משך (ימים)': 'duration',
+          'תלויות': 'deps',
+          'הערות': 'notes',
+          'startOffset': 'startOffset',
+          'milestone': 'milestone'
         };
         
-        // Map values
-        Object.keys(headerMap).forEach(index => {
-          const fieldName = headerMap[index];
-          if (task.hasOwnProperty(fieldName) && values[index] !== undefined) {
-            let value = values[index].trim().replace(/^"|"$/g, '');
-            
-            // Handle special cases
-            if (fieldName === 'milestone') {
-              task[fieldName] = (
-                value.toLowerCase() === 'true' || 
-                value === '1' || 
-                value.toLowerCase() === 'yes' ||
-                value.toLowerCase() === 'אמת'
-              );
-            } else if (fieldName === 'duration' || fieldName === 'startOffset') {
-              task[fieldName] = parseInt(value) || 0;
-            } else {
-              task[fieldName] = value;
-            }
-          }
+        headers.forEach((header, index) => {
+          const cleanHeader = header.trim();
+          headerMap[index] = hebrewToEnglish[cleanHeader] || cleanHeader;
         });
         
-        // Calculate missing dates
-        if (!task.start && task.startOffset !== undefined) {
-          const baseDate = new Date('2026-01-05');
-          const startDate = new Date(baseDate);
-          startDate.setDate(startDate.getDate() + task.startOffset);
-          task.start = formatDate(startDate);
+        const tasks = [];
+        let skippedRows = 0;
+        
+        // עיבוד כל שורת נתונים
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) {
+            skippedRows++;
+            continue;
+          }
+          
+          const values = parseCSVLine(line);
+          
+          // יצירת אובייקט משימה עם ברירות מחדל
+          const task = {
+            id: '',
+            name: '',
+            phase: '',
+            owner: '',
+            start: '',
+            end: '',
+            duration: 1,
+            deps: '',
+            notes: '',
+            startOffset: 0,
+            milestone: false,
+            status: 'not-started'
+          };
+          
+          // מיפוי ערכים
+          Object.keys(headerMap).forEach(index => {
+            const fieldName = headerMap[index];
+            if (task.hasOwnProperty(fieldName) && values[index] !== undefined) {
+              let value = values[index].trim().replace(/^"|"$/g, '');
+              
+              // טיפול במקרים מיוחדים
+              if (fieldName === 'milestone') {
+                task[fieldName] = (
+                  value.toLowerCase() === 'true' || 
+                  value === '1' || 
+                  value.toLowerCase() === 'yes' ||
+                  value.toLowerCase() === 'אמת'
+                );
+              } else if (fieldName === 'duration' || fieldName === 'startOffset') {
+                task[fieldName] = parseInt(value) || 0;
+              } else {
+                task[fieldName] = value;
+              }
+            }
+          });
+          
+          // חישוב תאריכים חסרים
+          if (!task.start && task.startOffset !== undefined) {
+            const baseDate = new Date('2026-01-05');
+            const startDate = new Date(baseDate);
+            startDate.setDate(startDate.getDate() + task.startOffset);
+            task.start = formatDate(startDate);
+          }
+          
+          if (!task.end && task.start && task.duration) {
+            const endDate = new Date(task.start);
+            endDate.setDate(endDate.getDate() + task.duration);
+            task.end = formatDate(endDate);
+          }
+          
+          // אימות משימה
+          if (!task.id || !task.name) {
+            skippedRows++;
+            logDebug(`דילוג על שורה ${i+1}: חסר מזהה או שם`);
+            continue;
+          }
+          
+          tasks.push(task);
         }
         
-        if (!task.end && task.start && task.duration) {
-          const endDate = new Date(task.start);
-          endDate.setDate(endDate.getDate() + task.duration);
-          task.end = formatDate(endDate);
-        }
+        logDebug(`פענוח הושלם: ${tasks.length} משימות, ${skippedRows} שורות נדלגו`);
         
-        // Validate task
-        if (!task.id || !task.name) {
-          skippedRows++;
-          logDebug(`דילוג על שורה ${i+1}: חסר מזהה או שם`);
-          continue;
-        }
-        
-        tasks.push(task);
+        return tasks;
+      } catch (error) {
+        console.error('שגיאה בפענוח CSV:', error);
+        logDebug(`שגיאת CSV: ${error.message}`);
+        showToast('שגיאה בקריאת קובץ ה-CSV', 'error');
+        return [];
       }
-      
-      logDebug(`פענוח הושלם: ${tasks.length} משימות, ${skippedRows} שורות נדלגו`);
-      
-      if (tasks.length > 0) {
-        logDebug(`דוגמאות למשימות: 
-          1. ${tasks[0].id}: ${tasks[0].name}
-          2. ${tasks[1]?.id || 'N/A'}: ${tasks[1]?.name || 'N/A'}
-          3. ${tasks[2]?.id || 'N/A'}: ${tasks[2]?.name || 'N/A'}`);
-      }
-      
-      return tasks;
     }
 
     function parseCSVLine(line) {
@@ -2134,7 +2250,7 @@
       
       toastContainer.appendChild(toast);
       
-      // Auto-remove
+      // הסרה אוטומטית
       setTimeout(() => {
         if (toast.parentElement) {
           toast.remove();
@@ -2154,7 +2270,7 @@
 
     // ===== EVENT LISTENERS =====
     function initEventListeners() {
-      // GitHub buttons
+      // כפתורי GitHub
       document.getElementById('settingsBtn').addEventListener('click', () => {
         openModal('githubModal');
       });
@@ -2166,7 +2282,7 @@
         setTimeout(saveToGitHub, 1000);
       });
 
-      // Search and filter
+      // חיפוש וסינון
       document.getElementById('searchInput').addEventListener('input', filterTasks);
       document.getElementById('categoryFilter').addEventListener('change', filterTasks);
       document.getElementById('ownerFilter').addEventListener('change', filterTasks);
@@ -2174,14 +2290,14 @@
       document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters);
       document.getElementById('showAllBtn').addEventListener('click', resetFilters);
 
-      // Task actions
+      // פעולות משימה
       document.getElementById('addTaskBtn').addEventListener('click', addNewTask);
       document.getElementById('exportBtn').addEventListener('click', exportToCSV);
       document.getElementById('printBtn').addEventListener('click', printView);
       document.getElementById('compactViewBtn').addEventListener('click', toggleCompactView);
       document.getElementById('exportTimelineBtn').addEventListener('click', exportTimelineAsImage);
 
-      // Timeline controls
+      // פקדי טיימליין
       document.getElementById('zoomInBtn').addEventListener('click', () => changeZoom(0.1));
       document.getElementById('zoomOutBtn').addEventListener('click', () => changeZoom(-0.1));
       document.getElementById('timelineView').addEventListener('change', renderTimeline);
@@ -2189,13 +2305,22 @@
       document.getElementById('fitToScreenBtn').addEventListener('click', fitToScreen);
       document.getElementById('showTodayBtn').addEventListener('click', showToday);
 
-      // Debug
+      // דיבאג
       document.getElementById('debugBtn').addEventListener('click', showDebugPanel);
 
-      // Window events
+      // אירועי חלון
       window.addEventListener('resize', debounce(() => {
         renderTimeline();
       }, 250));
+      
+      // תמיכה בגלגלת עכבר לזום
+      document.getElementById('timelineScroll').addEventListener('wheel', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
+          changeZoom(zoomDelta);
+        }
+      });
     }
 
     // ===== TASK FILTERING =====
@@ -2212,7 +2337,7 @@
         
         let match = true;
         
-        // Search term
+        // מונח חיפוש
         if (searchTerm) {
           const searchFields = [
             task.name || '',
@@ -2227,17 +2352,17 @@
           }
         }
         
-        // Category filter
+        // סינון קטגוריה
         if (match && category && task.phase !== category) {
           match = false;
         }
         
-        // Owner filter
+        // סינון אחראי
         if (match && owner && task.owner !== owner) {
           match = false;
         }
         
-        // Status filter
+        // סינון סטטוס
         if (match && status && task.status !== status) {
           match = false;
         }
@@ -2247,7 +2372,7 @@
 
       logDebug(`סינון הושלם: ${filteredTasks.length} מתוך ${tasks.length} משימות`);
       
-      // Update UI
+      // עדכון UI
       updateTaskList();
       renderTimeline();
       updateCharts();
@@ -2281,14 +2406,27 @@
       document.getElementById('taskForm').reset();
       document.getElementById('deleteTaskBtn').style.display = 'none';
       
-      // Set default dates
+      // הגדר תאריכים ברירת מחדל
       const today = new Date();
-      document.getElementById('taskStart').value = formatDate(today);
-      const endDate = new Date(today);
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() + 1);
+      const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + 30);
-      document.getElementById('taskEnd').value = formatDate(endDate);
       
-      // Generate new ID
+      // עדכן את ה-datepickers
+      if (flatpickrInstances.start) {
+        flatpickrInstances.start.setDate(startDate);
+      } else {
+        document.getElementById('taskStart').value = formatDate(startDate);
+      }
+      
+      if (flatpickrInstances.end) {
+        flatpickrInstances.end.setDate(endDate);
+      } else {
+        document.getElementById('taskEnd').value = formatDate(endDate);
+      }
+      
+      // צור מזהה חדש
       const maxId = tasks.length > 0 ? Math.max(...tasks.map(t => parseInt(t.id) || 0)) : 0;
       document.getElementById('taskId').value = (maxId + 1).toString();
       
@@ -2304,7 +2442,7 @@
 
       selectedTaskId = taskId;
       
-      // Fill form
+      // מלא טופס
       document.getElementById('taskId').value = task.id;
       document.getElementById('taskName').value = task.name;
       document.getElementById('taskPhase').value = task.phase;
@@ -2317,6 +2455,15 @@
       document.getElementById('taskStartOffset').value = task.startOffset || 0;
       document.getElementById('taskMilestone').checked = task.milestone;
       document.getElementById('taskStatus').value = task.status || 'not-started';
+      
+      // עדכן datepickers
+      if (flatpickrInstances.start && task.start) {
+        flatpickrInstances.start.setDate(task.start);
+      }
+      
+      if (flatpickrInstances.end && task.end) {
+        flatpickrInstances.end.setDate(task.end);
+      }
       
       document.getElementById('deleteTaskBtn').style.display = 'block';
       openModal('taskModal');
@@ -2344,7 +2491,7 @@
         status: document.getElementById('taskStatus').value
       };
 
-      // Calculate duration from dates if both provided
+      // חשב משך מתאריכים אם שניהם מסופקים
       if (taskData.start && taskData.end) {
         const startDate = new Date(taskData.start);
         const endDate = new Date(taskData.end);
@@ -2353,14 +2500,14 @@
       }
 
       if (selectedTaskId) {
-        // Update existing task
+        // עדכן משימה קיימת
         const index = tasks.findIndex(t => t.id === selectedTaskId);
         if (index !== -1) {
           tasks[index] = { ...tasks[index], ...taskData };
           logDebug(`משימה עודכנה: ${taskData.id} - ${taskData.name}`);
         }
       } else {
-        // Add new task
+        // הוסף משימה חדשה
         tasks.push(taskData);
         logDebug(`משימה נוספה: ${taskData.id} - ${taskData.name}`);
       }
@@ -2445,7 +2592,7 @@
       const barsContainer = document.getElementById('barsContainer');
       const timelineRange = document.getElementById('timelineRange');
       
-      // Clear previous content
+      // נקה תוכן קודם
       timelineGrid.innerHTML = '';
       barsContainer.innerHTML = '';
       
@@ -2454,13 +2601,19 @@
         return;
       }
 
-      // Calculate date range from filtered tasks
+      // חשב טווח תאריכים מהמשימות המסוננות
       const taskDates = filteredTasks.flatMap(task => {
         const dates = [];
-        if (task.start) dates.push(new Date(task.start));
-        if (task.end) dates.push(new Date(task.end));
+        if (task.start) {
+          const startDate = new Date(task.start);
+          if (!isNaN(startDate.getTime())) dates.push(startDate);
+        }
+        if (task.end) {
+          const endDate = new Date(task.end);
+          if (!isNaN(endDate.getTime())) dates.push(endDate);
+        }
         return dates;
-      }).filter(date => !isNaN(date.getTime()));
+      });
       
       if (taskDates.length === 0) {
         timelineRange.textContent = 'אין תאריכים זמינים';
@@ -2470,18 +2623,18 @@
       MIN_DATE = new Date(Math.min(...taskDates.map(d => d.getTime())));
       MAX_DATE = new Date(Math.max(...taskDates.map(d => d.getTime())));
       
-      // Add padding
+      // הוסף מרווח
       MIN_DATE.setDate(MIN_DATE.getDate() - 7);
       MAX_DATE.setDate(MAX_DATE.getDate() + 7);
       
-      // Calculate total days
+      // חשב סך הכל ימים
       const totalDays = Math.ceil((MAX_DATE - MIN_DATE) / (1000 * 60 * 60 * 24));
       
-      // Set container width
+      // הגדר רוחב מיכל
       const containerWidth = totalDays * PIXELS_PER_DAY * currentZoom;
       timelineScroll.style.minWidth = containerWidth + 'px';
       
-      // Create grid
+      // צור רשת
       for (let i = 0; i <= totalDays; i++) {
         const currentDate = new Date(MIN_DATE);
         currentDate.setDate(currentDate.getDate() + i);
@@ -2508,7 +2661,7 @@
         timelineGrid.appendChild(dayDiv);
       }
       
-      // Render task bars
+      // הצג סרגלי משימות
       filteredTasks.forEach((task, index) => {
         const taskStart = new Date(task.start);
         const taskEnd = new Date(task.end);
@@ -2526,11 +2679,11 @@
         taskBar.dataset.id = task.id;
         taskBar.dataset.index = index;
         
-        // Get color based on phase
+        // קבל צבע לפי קטגוריה
         const phaseColor = getPhaseColor(task.phase);
         taskBar.style.backgroundColor = phaseColor;
         
-        // Position and size
+        // מיקום וגודל
         const left = daysFromStart * PIXELS_PER_DAY * currentZoom;
         const width = taskDuration * PIXELS_PER_DAY * currentZoom;
         
@@ -2538,23 +2691,23 @@
         taskBar.style.width = Math.max(20, width) + 'px';
         taskBar.style.top = (index * 44) + 'px';
         
-        // Add content
+        // הוסף תוכן
         const label = document.createElement('div');
         label.className = 'task-label';
         label.innerHTML = `<span class="task-id">${task.id}</span> ${task.name}`;
         taskBar.appendChild(label);
         
-        // Add tooltip
+        // הוסף טולטיפ
         taskBar.title = `${task.name}\nקטגוריה: ${task.phase}\nאחראי: ${task.owner}\nתאריך: ${formatDisplayDate(task.start)} - ${formatDisplayDate(task.end)}\nמשך: ${task.duration} ימים\nסטטוס: ${task.status}`;
         
-        // Add click listener
+        // הוסף מאזין ללחיצה
         taskBar.addEventListener('click', (e) => {
           if (!e.target.classList.contains('task-handle')) {
             editTask(task.id);
           }
         });
         
-        // Add drag listeners for non-milestone tasks
+        // הוסף מאזיני גרירה למשימות שאינן אבני דרך
         if (!task.milestone) {
           makeTaskDraggable(taskBar, task);
         }
@@ -2562,13 +2715,13 @@
         barsContainer.appendChild(taskBar);
       });
       
-      // Render dependency lines
+      // הצג קווי תלות
       renderDependencies();
       
-      // Update range display
+      // עדכן תצוגת טווח
       timelineRange.textContent = `טווח: ${formatDisplayDate(MIN_DATE)} - ${formatDisplayDate(MAX_DATE)} (${totalDays} ימים)`;
       
-      logDebug(`טיימלין: ${filteredTasks.length} משימות, ${totalDays} ימים`);
+      logDebug(`טיימליין: ${filteredTasks.length} משימות, ${totalDays} ימים`);
     }
 
     function makeTaskDraggable(taskBar, task) {
@@ -2577,7 +2730,7 @@
       let startLeft = 0;
       
       taskBar.addEventListener('mousedown', (e) => {
-        if (e.button !== 0) return; // Left click only
+        if (e.button !== 0) return; // לחיצה שמאלית בלבד
         
         isDragging = true;
         startX = e.clientX;
@@ -2600,7 +2753,7 @@
           const newStartOffset = Math.max(0, (task.startOffset || 0) + deltaDays);
           tasks[taskIndex].startOffset = newStartOffset;
           
-          // Update dates
+          // עדכן תאריכים
           const baseDate = new Date('2026-01-05');
           const startDate = new Date(baseDate);
           startDate.setDate(startDate.getDate() + newStartOffset);
@@ -2610,10 +2763,10 @@
           endDate.setDate(endDate.getDate() + tasks[taskIndex].duration);
           tasks[taskIndex].end = formatDate(endDate);
           
-          // Update position
+          // עדכן מיקום
           taskBar.style.left = (startLeft + deltaX) + 'px';
           
-          // Update dependencies
+          // עדכן תלויות
           renderDependencies();
         };
         
@@ -2624,7 +2777,7 @@
           taskBar.classList.remove('dragging');
           document.body.style.cursor = '';
           
-          // Save changes
+          // שמור שינויים
           saveTasks();
           renderTimeline();
           
@@ -2662,13 +2815,13 @@
           
           if (!sourceTask || !targetTask) return;
           
-          // Find indices
+          // מצא אינדקסים
           const sourceIndex = filteredTasks.findIndex(t => t.id === depId);
           const targetIndex = filteredTasks.findIndex(t => t.id === task.id);
           
           if (sourceIndex === -1 || targetIndex === -1) return;
           
-          // Calculate positions
+          // חשב מיקומים
           const sourceStart = new Date(sourceTask.start);
           const sourceEnd = new Date(sourceTask.end);
           const targetStart = new Date(targetTask.start);
@@ -2685,10 +2838,10 @@
           const y1 = sourceIndex * 44 + 22;
           const y2 = targetIndex * 44 + 22;
           
-          // Only draw if target is after source
+          // הצג רק אם היעד אחרי המקור
           if (x2 <= x1) return;
           
-          // Create line
+          // צור קו
           const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
           line.setAttribute('class', 'dependency-line');
           line.setAttribute('x1', x1);
@@ -2703,7 +2856,7 @@
     }
 
     function updateCharts() {
-      // Category chart
+      // תרשים קטגוריות
       const categoryData = getCategoryData();
       const categoryCtx = document.getElementById('categoryChart').getContext('2d');
       
@@ -2737,7 +2890,7 @@
         }
       });
       
-      // Owner chart
+      // תרשים אחראים
       const ownerData = getOwnerData();
       const ownerCtx = document.getElementById('ownerChart').getContext('2d');
       
@@ -2776,7 +2929,7 @@
         }
       });
       
-      // Timeline chart
+      // תרשים טיימליין
       updateTimelineChart();
     }
 
@@ -2787,7 +2940,7 @@
         chartInstances.timelineChart.destroy();
       }
       
-      // Group tasks by month
+      // קבץ משימות לפי חודש
       const monthlyData = {};
       filteredTasks.forEach(task => {
         if (!task.start) return;
@@ -2863,14 +3016,14 @@
     function getPhaseColor(phase) {
       if (!phase) return '#6b7280';
       
-      // Extract phase number
+      // חלץ מספר שלב
       const match = phase.match(/^(\d+)/);
       if (match) {
         const phaseNum = parseInt(match[1]);
         return COLORS.phases[(phaseNum - 1) % COLORS.phases.length];
       }
       
-      // Hash for other phases
+      // hash לשלבים אחרים
       let hash = 0;
       for (let i = 0; i < phase.length; i++) {
         hash = phase.charCodeAt(i) + ((hash << 5) - hash);
@@ -2879,7 +3032,7 @@
     }
 
     function updateFilterOptions() {
-      // Update category filter
+      // עדכן סינון קטגוריות
       const categoryFilter = document.getElementById('categoryFilter');
       const categories = Array.from(new Set(tasks.map(t => t.phase).filter(p => p))).sort();
       
@@ -2893,7 +3046,7 @@
         categoryFilter.appendChild(option);
       });
 
-      // Update owner filter
+      // עדכן סינון אחראים
       const ownerFilter = document.getElementById('ownerFilter');
       const owners = Array.from(new Set(tasks.map(t => t.owner).filter(o => o))).sort();
       
@@ -2950,10 +3103,29 @@
     }
 
     function changeZoom(delta) {
-      currentZoom = Math.max(0.3, Math.min(3, currentZoom + delta));
+      // הגבל zoom ל-10% עד 300%
+      currentZoom = Math.max(0.1, Math.min(3, currentZoom + delta));
       document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
       saveUISettings();
       renderTimeline();
+      
+      // הצג הודעת zoom
+      const zoomMessages = {
+        0.1: 'זום מינימלי (10%)',
+        0.3: 'זום קטן מאוד',
+        0.5: 'זום קטן',
+        1.0: 'זום רגיל',
+        2.0: 'זום גדול',
+        3.0: 'זום מקסימלי (300%)'
+      };
+      
+      const closestZoom = Object.keys(zoomMessages).reduce((prev, curr) => {
+        return Math.abs(curr - currentZoom) < Math.abs(prev - currentZoom) ? curr : prev;
+      });
+      
+      if (Math.abs(currentZoom - closestZoom) < 0.05) {
+        showToast(`זום: ${zoomMessages[closestZoom]}`, 'info');
+      }
     }
 
     function updatePixelsPerDay() {
@@ -2971,8 +3143,8 @@
       const totalDays = Math.ceil((MAX_DATE - MIN_DATE) / (1000 * 60 * 60 * 24));
       const neededPixelsPerDay = containerWidth / totalDays;
       
-      // Find closest preset
-      const presets = [10, 20, 30, 40];
+      // מצא הקרוב ביותר להגדרות המוגדרות מראש
+      const presets = [5, 10, 20, 30, 40];
       let closest = presets[0];
       let minDiff = Math.abs(neededPixelsPerDay - closest);
       
@@ -3048,18 +3220,18 @@
 
     // ===== STATISTICS =====
     function updateStats() {
-      // Total tasks
+      // סך הכל משימות
       document.getElementById('totalTasks').textContent = tasks.length;
       
-      // Milestones
+      // אבני דרך
       const milestones = tasks.filter(t => t.milestone).length;
       document.getElementById('milestonesCount').textContent = milestones;
       
-      // Active tasks (in-progress)
+      // משימות פעילות (בתהליך)
       const activeTasks = tasks.filter(t => t.status === 'in-progress').length;
       document.getElementById('activeTasks').textContent = activeTasks;
       
-      // Dependencies count
+      // ספירת תלויות
       const depsCount = tasks.reduce((acc, task) => {
         if (!task.deps) return acc;
         const deps = task.deps.split(',').filter(d => d.trim() !== '');
@@ -3067,11 +3239,11 @@
       }, 0);
       document.getElementById('dependenciesCount').textContent = depsCount;
       
-      // Tasks with dependencies
+      // משימות עם תלויות
       const tasksWithDeps = tasks.filter(t => t.deps && t.deps.trim() !== '').length;
       document.getElementById('tasksWithDeps').textContent = tasksWithDeps;
       
-      // Average duration
+      // ממוצע משך
       const avgDuration = tasks.length > 0 
         ? Math.round(tasks.reduce((sum, t) => sum + (t.duration || 1), 0) / tasks.length)
         : 0;
@@ -3099,7 +3271,7 @@
       const logEntry = `[${timestamp}] ${message}`;
       debugLogs.push(logEntry);
       
-      // Keep only last 100 entries
+      // שמור רק 100 רשומות אחרונות
       if (debugLogs.length > 100) {
         debugLogs.shift();
       }
@@ -3111,14 +3283,15 @@
       const debugContent = document.getElementById('debugContent');
       debugContent.innerHTML = '';
       
-      // System info
+      // מידע מערכת
       debugContent.innerHTML += `<div><strong>מידע מערכת:</strong></div>`;
       debugContent.innerHTML += `<div>משימות: ${tasks.length} (מסוננות: ${filteredTasks.length})</div>`;
       debugContent.innerHTML += `<div>GitHub: ${githubSettings ? 'מחובר' : 'לא מחובר'}</div>`;
-      debugContent.innerHTML += `<div>Zoom: ${currentZoom.toFixed(1)}x</div>`;
+      debugContent.innerHTML += `<div>Zoom: ${currentZoom.toFixed(1)}x (${Math.round(currentZoom * 100)}%)</div>`;
       debugContent.innerHTML += `<div>פיקסלים ליום: ${PIXELS_PER_DAY}</div>`;
+      debugContent.innerHTML += `<div>טווח תאריכים: ${MIN_DATE ? formatDisplayDate(MIN_DATE) : 'לא מוגדר'} - ${MAX_DATE ? formatDisplayDate(MAX_DATE) : 'לא מוגדר'}</div>`;
       
-      // Debug logs
+      // לוגים
       debugContent.innerHTML += `<div style="margin-top: 10px;"><strong>לוגים:</strong></div>`;
       const recentLogs = debugLogs.slice(-20).reverse();
       recentLogs.forEach(log => {
@@ -3157,6 +3330,7 @@
     function forceReload() {
       localStorage.removeItem(STORAGE_KEYS.TASKS);
       localStorage.removeItem(STORAGE_KEYS.GITHUB_SETTINGS);
+      localStorage.removeItem(STORAGE_KEYS.UI_SETTINGS);
       location.reload();
     }
 
@@ -3173,8 +3347,12 @@
       };
     }
 
-    // Initial render
-    updateDashboard();
+    // הפעלה ראשונית
+    setTimeout(() => {
+      if (!isInitialized) {
+        initApp();
+      }
+    }, 1000);
   </script>
 </body>
 </html>
