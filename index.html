@@ -1,718 +1,452 @@
 <!doctype html>
-<html lang="he" dir="rtl">
+<html lang="he">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>גאנט פרויקט – AMIR DAVIDI TECHNOLOGIES</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Gantt – Ghana Energy CERT (Drag & Drop) + Import/Export + Charts</title>
 <style>
-  :root{
-    --bg:#f6f7fb; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e5e7eb;
-    --brand:#111827; --danger:#dc2626; --warn:#f59e0b; --ok:#16a34a;
-  }
-  *{box-sizing:border-box}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:var(--bg);color:var(--ink)}
-  header{padding:16px 18px;background:var(--brand);color:#fff}
-  header .brand{font-size:12px;letter-spacing:2px;opacity:.9;text-align:left;direction:ltr}
-  header h1{margin:6px 0 0;font-size:18px;font-weight:900}
-  header .sub{margin-top:6px;font-size:13px;opacity:.9}
-  .wrap{padding:14px 14px 22px}
-  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-  .controls input,.controls select,.controls button{padding:10px 12px;border-radius:12px;border:1px solid #d1d5db;background:#fff;font-size:14px}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#f6f7fb;color:#111827}
+  header{padding:16px 20px;background:#111827;color:#fff}
+  header h1{margin:0;font-size:18px;font-weight:900;direction:rtl;text-align:right}
+  header .meta{margin-top:6px;font-size:13px;opacity:.9;direction:rtl;text-align:right;line-height:1.35}
+  .wrap{padding:16px 20px}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .controls input,.controls select,.controls button{padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;background:#fff;font-size:14px}
   .controls button{cursor:pointer}
-  .btn-primary{background:var(--brand)!important;color:#fff;border-color:var(--brand)!important}
-  .btn-ghost{background:#fff}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
-  .dashboard{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:10px}
-  .kpi{padding:12px 12px}
-  .kpi .k{font-size:12px;color:var(--muted)}
-  .kpi .v{font-size:18px;font-weight:900;margin-top:4px}
-  .kpi .s{font-size:12px;color:var(--muted);margin-top:2px}
-  .layout{display:grid;grid-template-columns: 520px 1fr}
-  .left{border-left:1px solid var(--line);max-height:72vh;overflow:auto}
-  .right{position:relative;overflow:auto;max-height:72vh}
+  .controls .btn-primary{background:#111827;color:#fff;border-color:#111827}
+  .controls .btn-ghost{background:#fff;color:#111827}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .grid{display:grid;grid-template-columns: 540px 1fr;}
+  .left{border-right:1px solid #e5e7eb}
+  .right{overflow:auto}
   .row{display:flex;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid #f1f5f9}
   .row:nth-child(odd){background:#fafafa}
-  .row .title{flex:1;text-align:right;font-size:13px;line-height:1.2}
+  .row .title{flex:1;direction:rtl;text-align:right;font-size:13px;line-height:1.2}
   .row .meta{font-size:12px;color:#374151;white-space:nowrap}
-  .row.header{background:#eef2ff;font-weight:900}
-  .row.group{background:#f1f5ff;font-weight:800;cursor:pointer}
-  .row.task{cursor:pointer}
-  .row.task:hover{background:#f3f4f6}
-  .timeline{position:sticky;top:0;z-index:3;background:#fff;border-bottom:1px solid var(--line)}
-  .ticks{display:flex}
-  .tick{border-left:1px solid #eef2f7;padding:8px 6px;font-size:12px;color:#374151;white-space:nowrap}
+  .timeline{position:relative;min-height: 40px;border-bottom:1px solid #e5e7eb;background:#fff}
+  .ticks{display:flex;position:sticky;top:0;background:#fff;z-index:2}
+  .tick{border-right:1px solid #eef2f7;padding:8px 6px;font-size:12px;color:#374151;white-space:nowrap}
   .bar-area{position:relative}
   .bar-row{position:relative;height:34px;border-bottom:1px solid #f1f5f9}
-  .dep-layer{position:absolute;inset:0;pointer-events:none;z-index:1}
-  .today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--danger);opacity:.65;z-index:2;pointer-events:none}
-  .bar{position:absolute;top:7px;height:20px;border-radius:10px;cursor:grab;box-shadow:0 1px 1px rgba(0,0,0,.08);z-index:2}
+  .bar{position:absolute;top:7px;height:20px;border-radius:10px;background:#2563eb;cursor:grab;box-shadow:0 1px 1px rgba(0,0,0,.08)}
   .bar.dragging{cursor:grabbing;opacity:.9}
-  .bar .label{position:absolute;left:10px;right:10px;top:2px;font-size:10px;line-height:1;color:#fff;opacity:.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;direction:ltr;text-align:left}
-  .bar .deps{position:absolute;left:10px;right:10px;bottom:2px;font-size:10px;line-height:1;color:#fff;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;direction:ltr;text-align:left}
-  .handle{position:absolute;top:0;width:10px;height:20px;opacity:0}
-  .bar:hover .handle{opacity:.35}
-  .handle.left{left:0;background:rgba(0,0,0,.25);cursor:ew-resize;border-top-left-radius:10px;border-bottom-left-radius:10px}
-  .handle.right{right:0;background:rgba(0,0,0,.25);cursor:ew-resize;border-top-right-radius:10px;border-bottom-right-radius:10px}
-  .baseline{position:absolute;top:12px;height:6px;border-radius:999px;background:#94a3b8;opacity:.55;z-index:1}
-  .critical{outline:2px solid var(--danger);outline-offset:2px}
-  .overdue{background:var(--danger)!important}
-  .done{opacity:.65;filter:saturate(.8)}
-  .milestone{position:absolute;top:9px;width:16px;height:16px;transform:rotate(45deg);border-radius:3px;cursor:grab;box-shadow:0 1px 2px rgba(0,0,0,.12);z-index:2}
-  .milestone.dragging{cursor:grabbing;opacity:.9}
-  #legend{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-start}
-  #legend .lg-item{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:12px}
-  #legend .sw{width:12px;height:12px;border-radius:4px}
-  .hint{padding:10px 12px;font-size:12px;color:#334155}
+  .bar .label{position:absolute;left:10px;right:10px;top:2px;font-size:10px;line-height:1;color:#fff;opacity:.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+  .bar .deps{position:absolute;left:10px;right:10px;bottom:2px;font-size:10px;line-height:1;color:#fff;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+
+  .handle{position:absolute;top:0;width:10px;height:20px;opacity:.0;}
+  .bar:hover .handle{opacity:.35;}
+  .handle.left{left:0;border-top-left-radius:10px;border-bottom-left-radius:10px;background:#0b3ea8;cursor:ew-resize}
+  .handle.right{right:0;border-top-right-radius:10px;border-bottom-right-radius:10px;background:#0b3ea8;cursor:ew-resize}
+  .hint{padding:10px 12px;font-size:12px;color:#374151;direction:rtl;text-align:right}
   .pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-size:12px}
-  .mobilebar{display:none;gap:10px;align-items:center;justify-content:space-between;padding:10px 10px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:4}
-  .mobilebar button{padding:10px 12px;border-radius:12px;border:1px solid #d1d5db;background:#fff}
-  /* Side panel */
-  #sidePanel{position:fixed;top:0;left:-420px;width:420px;max-width:92vw;height:100%;background:#fff;border-right:1px solid var(--line);
-    box-shadow:4px 0 12px rgba(0,0,0,.08);transition:left .25s ease;z-index:9999;display:flex;flex-direction:column}
-  #sidePanel .ph{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
-  #sidePanel .pb{padding:14px 16px;overflow:auto;font-size:13px}
-  #sidePanel label{display:block;font-size:12px;color:var(--muted);margin-top:10px}
-  #sidePanel input,#sidePanel select,#sidePanel textarea{width:100%;padding:10px 10px;border-radius:12px;border:1px solid #d1d5db;font-size:14px}
-  #sidePanel textarea{min-height:110px;resize:vertical}
-  #sidePanel .rowbtn{display:flex;gap:10px;margin-top:12px}
-  #sidePanel .rowbtn button{flex:1}
-  @media (max-width: 980px){
-    .dashboard{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .layout{grid-template-columns: 1fr}
-    .left{display:none;max-height:none}
-    .right{max-height:none}
-    .mobilebar{display:flex}
-  }
+
+  #legend .lg-item{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:999px;background:#fff;font-size:12px}
+  #legend .sw{width:12px;height:12px;border-radius:4px}
+  .dep-layer{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+
+  /* Charts */
+  .dash{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:12px;margin:12px 0}
+  @media (max-width: 980px){ .dash{grid-template-columns:1fr} .grid{grid-template-columns:1fr} .left{border-right:none;border-bottom:1px solid #e5e7eb}}
+  .chart-card{padding:12px}
+  .chart-title{font-weight:900;font-size:13px;margin:0 0 8px 0;direction:rtl;text-align:right}
+  canvas{width:100%;height:160px;display:block}
+  .chart-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;direction:ltr}
+  .chart-legend .it{display:flex;gap:6px;align-items:center;font-size:12px;color:#374151}
+  .chart-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .importBox{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .importBox input[type=file]{padding:8px 10px}
 </style>
 </head>
 <body>
 <header>
-  <div class="brand">AMIR DAVIDI TECHNOLOGIES</div>
-  <h1>גאנט פרויקט – ניהול ובקרת תוכנית עבודה</h1>
-  <div class="sub">Drag & Drop, Auto‑Schedule, Baseline, Critical Path, תלויות, וייצוא CSV בעברית <span class="pill">מותאם לנייד</span></div>
+  <h1>AMIR DAVIDI TECHNOLOGIES – גאנט פרויקט Ghana Energy CERT (Drag & Drop)</h1>
+  <div class="meta">
+    ✅ גרירה מזיזה משימה | ✅ גרירת קצוות משנה Duration | ✅ חצים לתלויות<br/>
+    ✅ Export CSV (כולל כל שדות היצירה) | ✅ Import CSV משנה מיד את כל הנתונים | ✅ נשמר מקומית בדפדפן
+    <span class="pill">UTF‑8 BOM לאקסל (עברית תקינה)</span>
+  </div>
 </header>
 
 <div class="wrap">
-  <div class="dashboard">
-    <div class="card kpi"><div class="k">סה״כ משימות</div><div class="v" id="kTotal">—</div><div class="s" id="kRange">—</div></div>
-    <div class="card kpi"><div class="k">התקדמות</div><div class="v" id="kProgress">—</div><div class="s" id="kDone">—</div></div>
-    <div class="card kpi"><div class="k">איחורים</div><div class="v" id="kOverdue">—</div><div class="s">End &lt; Today ולא הושלם</div></div>
-    <div class="card kpi"><div class="k">מסלול קריטי</div><div class="v" id="kCritical">—</div><div class="s">Critical Path</div></div>
-  </div>
-
   <div class="controls">
-    <input id="q" placeholder="חיפוש (שם משימה / Owner / Phase / ID)..." style="min-width:280px"/>
+    <input id="q" placeholder="חיפוש (Task / Owner / Phase / ID)..." style="min-width:320px"/>
     <select id="ownerFilter"><option value="">כל ה-Owners</option></select>
-    <select id="statusFilter">
-      <option value="">כל הסטטוסים</option>
-      <option value="not_started">לא התחיל</option>
-      <option value="in_progress">בתהליך</option>
-      <option value="done">הושלם</option>
-    </select>
     <select id="zoom">
-      <option value="day">יום</option>
-      <option value="week" selected>שבוע</option>
-      <option value="month">חודש</option>
+      <option value="day">יום (Day)</option>
+      <option value="week" selected>שבוע (Week)</option>
+      <option value="month">חודש (Month)</option>
     </select>
 
-    <div id="legend"></div>
+    <div id="legend" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"></div>
 
-    <button class="btn-ghost" id="collapseAll">סגור הכל</button>
-    <button class="btn-ghost" id="expandAll">הצג הכל</button>
-    <button class="btn-primary" id="autoSchedule">Auto‑Schedule</button>
-    <button class="btn-primary" id="saveBaseline">Save Baseline</button>
-    <button class="btn-primary" id="exportCsv">ייצוא CSV</button>
+    <button class="btn-primary" id="exportCsv">Export CSV</button>
+
+    <div class="importBox">
+      <input id="importFile" type="file" accept=".csv,text/csv"/>
+      <button class="btn-ghost" id="importBtn">Import CSV</button>
+    </div>
+
     <button id="reset">איפוס</button>
   </div>
 
-  <div class="card">
-    <div class="mobilebar">
-      <button id="toggleList">רשימת שלבים</button>
-      <div style="font-weight:900">גאנט</div>
-      <button id="today">היום</button>
+  <div class="dash">
+    <div class="card chart-card">
+      <p class="chart-title">משימות לפי קטגוריה</p>
+      <canvas id="chartCats" width="600" height="220"></canvas>
+      <div class="chart-legend" id="lgCats"></div>
     </div>
+    <div class="card chart-card">
+      <p class="chart-title">משימות לפי Owner</p>
+      <canvas id="chartOwners" width="600" height="220"></canvas>
+      <div class="chart-legend" id="lgOwners"></div>
+    </div>
+    <div class="card chart-card">
+      <p class="chart-title">מדדים מהירים</p>
+      <canvas id="chartKPIs" width="600" height="220"></canvas>
+      <div class="hint" style="padding:8px 0 0 0;text-align:right">
+        KPI: כמות משימות · כמות Milestones · כמות תלויות · טווח תאריכים (ימים)
+      </div>
+    </div>
+  
+    <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px dashed #cbd5e1;border-radius:10px;background:#fff;cursor:pointer">
+      <span style="font-size:13px">ייבוא CSV</span>
+      <input type="file" id="importCsvFile" accept=".csv,text/csv" style="display:none"/>
+    </label>
+    <button id="loadRepo" title="טען tasks.csv מהתיקייה של האתר (GitHub Pages)">Load from GIT (tasks.csv)</button>
+    <button id="downloadTemplate" title="הורד תבנית CSV מלאה לייבוא">Download CSV Template</button>
+    <button id="clearLocal" title="מוחק שינויים מקומיים ומחזיר לטעינה מה-GIT">Clear Local Cache</button>
+</div>
 
-    <div class="layout">
+  <div class="card">
+    <div class="grid">
       <div class="left" id="left"></div>
-      <div class="right" id="rightPane">
+      <div class="right">
         <div class="timeline" id="timeline"></div>
         <div class="bar-area" id="bars"></div>
       </div>
     </div>
-
     <div class="hint">
-      טיפ להצגה ללקוח/הנהלה: שמור Baseline בתחילת ישיבה, ואז הצג סטיות בפועל לעומת התוכנית המקורית.
+      טיפ: לדיוק גבוה העבר ל-Zoom "יום". דאבל-קליק על בר מציג פרטים. לאחר Import/Drag אפשר Export CSV ולהדביק חזרה לאקסל.
     </div>
   </div>
-</div>
-
-<div id="sidePanel" aria-hidden="true">
-  <div class="ph">
-    <strong>ניהול משימה</strong>
-    <button id="closePanel">✕</button>
-  </div>
-  <div class="pb" id="panelBody"></div>
 </div>
 
 <script>
 const MS_DAY = 86400000;
 const MIN_START = new Date("2026-01-05");
-const MAX_END   = new Date("2026-06-10");
+const MAX_END = new Date("2026-06-10");
 
-// ===== Data =====
-const BASE = [{"id": "1", "phase": "1. Management", "name": "פתיחת פרויקט וניהול (Phase 1)", "owner": "צוות יעוץ", "start": "2026-01-05", "end": "2026-02-04", "startOffset": 0, "duration": 30, "deps": ""}, {"id": "2", "phase": "1.1 Admin", "name": "פגישת קיק-אוף והתנעת צוות היגוי", "owner": "צוות יעוץ", "start": "2026-01-05", "end": "2026-01-07", "startOffset": 0, "duration": 2, "deps": ""}, {"id": "3", "phase": "1.1 Admin", "name": "הקמת משרד PMO פיזי באקרה (Ghana)", "owner": "Local Ops", "start": "2026-01-07", "end": "2026-01-21", "startOffset": 2, "duration": 14, "deps": "2"}, {"id": "4", "phase": "1.1 Admin", "name": "הכנת תוכנית ניהול פרויקט (PMP) מעודכנת", "owner": "צוות יעוץ", "start": "2026-01-07", "end": "2026-01-17", "startOffset": 2, "duration": 10, "deps": "2"}, {"id": "5", "phase": "1.2 Regs", "name": "איסוף מסמכי EUC מ-17 גופים (חתימות סופיות)", "owner": "Indigo", "start": "2026-01-17", "end": "2026-02-06", "startOffset": 12, "duration": 20, "deps": "4"}, {"id": "6", "phase": "1.2 Regs", "name": "הגשת בקשה לרישיון שיווק וייצוא (אפכ\"א)", "owner": "Adi (Elta)", "start": "2026-02-06", "end": "2026-02-20", "startOffset": 32, "duration": 14, "deps": "5"}, {"id": "7", "phase": "1.2 Regs", "name": "קבלת אישור משרד הביטחון להצפנה (VPN)", "owner": "Adi (Elta)", "start": "2026-02-20", "end": "2026-03-22", "startOffset": 46, "duration": 30, "deps": "6"}, {"id": "8", "phase": "1.3 Sync", "name": "סנכרון אבני דרך בין Amendment 1 לנספח התשלומים", "owner": "צוות יעוץ", "start": "2026-01-17", "end": "2026-01-24", "startOffset": 12, "duration": 7, "deps": "4"}, {"id": "9", "phase": "1.3 Org", "name": "עדכון תרשים מבנה ארגוני (Org Chart) - אינדיגו", "owner": "Indigo", "start": "2026-01-07", "end": "2026-01-12", "startOffset": 2, "duration": 5, "deps": "2"}, {"id": "10", "phase": "2. Design", "name": "CDR - תכנון הנדסי מפורט (Design Phase)", "owner": "Engineering", "start": "2026-01-05", "end": "2026-03-06", "startOffset": 0, "duration": 60, "deps": ""}, {"id": "11", "phase": "2.1 Core", "name": "תכנון LLD רשת וסגמנטציה (Dell Core)", "owner": "System Eng", "start": "2026-01-17", "end": "2026-02-01", "startOffset": 12, "duration": 15, "deps": "4"}, {"id": "12", "phase": "2.1 Core", "name": "תכנון חוקת Firewall ותורת אבטחה", "owner": "Security Eng", "start": "2026-02-01", "end": "2026-02-11", "startOffset": 27, "duration": 10, "deps": "11"}, {"id": "13", "phase": "2.2 Remote", "name": "תכנון פריסת 17 אתרי קצה (Remote Sites v3.0)", "owner": "System Eng", "start": "2026-02-01", "end": "2026-02-21", "startOffset": 27, "duration": 20, "deps": "11"}, {"id": "14", "phase": "2.2 Remote", "name": "תכנון ניטור OT פסיבי (Modbus/IEC60870)", "owner": "OT Expert", "start": "2026-02-21", "end": "2026-03-08", "startOffset": 47, "duration": 15, "deps": "13"}, {"id": "15", "phase": "2.3 DR/BU", "name": "תכנון פתרון DR (החלטה: חדר בקרה משני פיזי)", "owner": "צוות יעוץ/Adi", "start": "2026-02-01", "end": "2026-02-15", "startOffset": 27, "duration": 14, "deps": "11"}, {"id": "16", "phase": "2.3 DR/BU", "name": "תכנון מערך גיבוי (On-Prem vs Cloud)", "owner": "System Eng", "start": "2026-02-15", "end": "2026-02-22", "startOffset": 41, "duration": 7, "deps": "15"}, {"id": "17", "phase": "2.4 Elta", "name": "תכנון אינטגרציית CyConcerto & CyScan", "owner": "Elta Eng", "start": "2026-02-01", "end": "2026-02-16", "startOffset": 27, "duration": 15, "deps": "11"}, {"id": "18", "phase": "2.5 Approval", "name": "הגשת ספר CDR סופי לאישור הלקוח (MoE)", "owner": "צוות יעוץ", "start": "2026-02-16", "end": "2026-02-26", "startOffset": 42, "duration": 10, "deps": "17"}, {"id": "19", "phase": "3. Procurement", "name": "רכש, לוגיסטיקה ושילוח (BOM)", "owner": "Procurement", "start": "2026-01-05", "end": "2026-04-05", "startOffset": 0, "duration": 90, "deps": ""}, {"id": "20", "phase": "3.1 Hardware", "name": "הוצאת PO לחומרת Dell (Servers/Storage)", "owner": "צוות יעוץ", "start": "2026-02-26", "end": "2026-03-03", "startOffset": 52, "duration": 5, "deps": "18"}, {"id": "21", "phase": "3.1 Hardware", "name": "הוצאת PO לציוד Fortinet (Core/Edge)", "owner": "צוות יעוץ", "start": "2026-02-26", "end": "2026-03-03", "startOffset": 52, "duration": 5, "deps": "18"}, {"id": "22", "phase": "3.2 SW/Lic", "name": "רכישת רישיונות QRadar (36 Months)", "owner": "צוות יעוץ", "start": "2026-03-03", "end": "2026-03-08", "startOffset": 57, "duration": 5, "deps": "20"}, {"id": "23", "phase": "3.2 SW/Lic", "name": "רכישת רישיונות VMware vSphere & SRM", "owner": "צוות יעוץ", "start": "2026-03-03", "end": "2026-03-08", "startOffset": 57, "duration": 5, "deps": "20"}, {"id": "24", "phase": "3.2 SW/Lic", "name": "רכישת רישיונות Centerity (IT/OT)", "owner": "צוות יעוץ", "start": "2026-03-03", "end": "2026-03-08", "startOffset": 57, "duration": 5, "deps": "20"}, {"id": "25", "phase": "3.3 Logist", "name": "ביצוע Staging ובדיקות DOA במעבדה בארץ", "owner": "Indigo Eng", "start": "2026-03-03", "end": "2026-03-24", "startOffset": 57, "duration": 21, "deps": "21"}, {"id": "26", "phase": "3.3 Logist", "name": "עדכון תנאי שילוח ל-CIP/DAP (Air Freight)", "owner": "צוות יעוץ", "start": "2026-03-24", "end": "2026-03-27", "startOffset": 78, "duration": 3, "deps": "25"}, {"id": "27", "phase": "3.3 Logist", "name": "שילוח אוירי לאקרה ושחרור ממכס", "owner": "Logistics", "start": "2026-03-27", "end": "2026-04-10", "startOffset": 81, "duration": 14, "deps": "26"}, {"id": "28", "phase": "4. HR/Training", "name": "גיוס כוח אדם והדרכות (KT)", "owner": "HR / Indigo", "start": "2026-01-05", "end": "2026-02-19", "startOffset": 0, "duration": 45, "deps": ""}, {"id": "29", "phase": "4.1 Hiring", "name": "גיוס מהנדס מערכת מקומי (System Engineer)", "owner": "Indigo", "start": "2026-01-21", "end": "2026-02-20", "startOffset": 16, "duration": 30, "deps": "3"}, {"id": "30", "phase": "4.1 Hiring", "name": "גיוס צוות אנליסטים SOC (Tier 1-3)", "owner": "Indigo", "start": "2026-02-20", "end": "2026-03-22", "startOffset": 46, "duration": 30, "deps": "29"}, {"id": "31", "phase": "4.2 Training", "name": "קורס מנהלי מערכת (Infrastructure)", "owner": "Indigo Eng", "start": "2026-03-22", "end": "2026-03-27", "startOffset": 76, "duration": 5, "deps": "30"}, {"id": "32", "phase": "4.2 Training", "name": "הכשרת אנליסטים על מוצרי Elta/QRadar", "owner": "Elta/Indigo", "start": "2026-03-27", "end": "2026-04-06", "startOffset": 81, "duration": 10, "deps": "31"}, {"id": "33", "phase": "5. Surveys", "name": "סקרי אתר ל-17 גופים (Site Surveys)", "owner": "Survey Team", "start": "2026-01-05", "end": "2026-03-06", "startOffset": 0, "duration": 60, "deps": ""}, {"id": "34", "phase": "5.1 - 5.17", "name": "סקר אתר: VRA", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "35", "phase": "5.1 - 5.17", "name": "סקר אתר: GRIDCo", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "36", "phase": "5.1 - 5.17", "name": "סקר אתר: ECG", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "37", "phase": "5.1 - 5.17", "name": "סקר אתר: NEDCo", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "38", "phase": "5.1 - 5.17", "name": "סקר אתר: BPA", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "39", "phase": "5.1 - 5.17", "name": "סקר אתר: GNPC", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "40", "phase": "5.1 - 5.17", "name": "סקר אתר: GNGC", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "41", "phase": "5.1 - 5.17", "name": "סקר אתר: BOST", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "42", "phase": "5.1 - 5.17", "name": "סקר אתר: Energy Commission", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "43", "phase": "5.1 - 5.17", "name": "סקר אתר: PURC", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "44", "phase": "5.1 - 5.17", "name": "סקר אתר: MoE", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "45", "phase": "5.1 - 5.17", "name": "סקר אתר: VRA-Generation", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "46", "phase": "5.1 - 5.17", "name": "סקר אתר: Volta Aluminium", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "47", "phase": "5.1 - 5.17", "name": "סקר אתר: Tema Oil Refinery", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "48", "phase": "5.1 - 5.17", "name": "סקר אתר: Ghana Gas", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "49", "phase": "5.1 - 5.17", "name": "סקר אתר: Takoradi Plant", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "50", "phase": "5.1 - 5.17", "name": "סקר אתר: Karpowership", "owner": "Survey Team", "start": "2026-02-26", "end": "2026-03-01", "startOffset": 52, "duration": 3, "deps": "18"}, {"id": "51", "phase": "5.18", "name": "אישור דוחות SSR סופיים מול הארגונים", "owner": "צוות יעוץ", "start": "2026-03-01", "end": "2026-03-11", "startOffset": 55, "duration": 10, "deps": "50"}, {"id": "52", "phase": "6. Core Build", "name": "הקמת מרכז ה-CERT (Core DC)", "owner": "Indigo Eng", "start": "2026-01-05", "end": "2026-02-14", "startOffset": 0, "duration": 40, "deps": ""}, {"id": "53", "phase": "6.1 Physical", "name": "התקנת Racks, כבילה וחשמל", "owner": "Local Ops", "start": "2026-04-10", "end": "2026-04-17", "startOffset": 95, "duration": 7, "deps": "27"}, {"id": "54", "phase": "6.2 Compute", "name": "התקנת שרתי Dell R660 ו-vSAN", "owner": "Indigo Eng", "start": "2026-04-17", "end": "2026-04-27", "startOffset": 102, "duration": 10, "deps": "53"}, {"id": "55", "phase": "6.3 Security", "name": "התקנת Fortinet Core והגדרת VPN Gateway", "owner": "Security Eng", "start": "2026-04-27", "end": "2026-05-04", "startOffset": 112, "duration": 7, "deps": "54"}, {"id": "56", "phase": "6.4 Apps", "name": "פריסת IBM QRadar Console/EP", "owner": "Indigo Eng", "start": "2026-05-04", "end": "2026-05-14", "startOffset": 119, "duration": 10, "deps": "55"}, {"id": "57", "phase": "6.5 Apps", "name": "התקנת CyConcerto, CyScan, CyShare", "owner": "Elta Eng", "start": "2026-05-14", "end": "2026-05-24", "startOffset": 129, "duration": 10, "deps": "56"}, {"id": "58", "phase": "6.6 NOC", "name": "הקמת ה-SOC הפיזי (קיר וידאו/ריהוט)", "owner": "Local Ops", "start": "2026-04-17", "end": "2026-04-27", "startOffset": 102, "duration": 10, "deps": "53"}, {"id": "59", "phase": "7. Remote Sites", "name": "אינטגרציית 17 אתרי קצה", "owner": "Indigo Eng", "start": "2026-01-05", "end": "2026-03-06", "startOffset": 0, "duration": 60, "deps": ""}, {"id": "60", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: VRA", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "61", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: GRIDCo", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "62", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: ECG", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "63", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: NEDCo", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "64", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: BPA", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "65", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: GNPC", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "66", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: GNGC", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "67", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: BOST", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "68", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: Energy Commission", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "69", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: PURC", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "70", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: MoE", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "71", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: VRA-Generation", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "72", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: Volta Aluminium", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "73", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: Tema Oil Refinery", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "74", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: Ghana Gas", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "75", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: Takoradi Plant", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "76", "phase": "7.1 - 7.17", "name": "התקנת ציוד (FortiGate 80F) באתר: Karpowership", "owner": "Indigo Eng", "start": "2026-04-10", "end": "2026-04-14", "startOffset": 95, "duration": 4, "deps": "51, 27"}, {"id": "77", "phase": "7.18", "name": "הקמת VPN Tunnels ואימות תקשורת", "owner": "Security Eng", "start": "2026-04-14", "end": "2026-04-24", "startOffset": 99, "duration": 10, "deps": "76"}, {"id": "78", "phase": "7.19", "name": "התקנת OT Passive Taps באתרי הייצור", "owner": "OT Expert", "start": "2026-04-24", "end": "2026-05-09", "startOffset": 109, "duration": 15, "deps": "77"}, {"id": "79", "phase": "8. DR Site", "name": "הקמת אתר ה-DR (Disaster Recovery)", "owner": "System Eng", "start": "2026-01-05", "end": "2026-02-04", "startOffset": 0, "duration": 30, "deps": ""}, {"id": "80", "phase": "8.1 Build", "name": "התקנת חומרה באתר המשני", "owner": "Local Ops", "start": "2026-04-10", "end": "2026-04-17", "startOffset": 95, "duration": 7, "deps": "27"}, {"id": "81", "phase": "8.2 Rep", "name": "הגדרת Unity Async Replication", "owner": "Indigo Eng", "start": "2026-04-17", "end": "2026-04-24", "startOffset": 102, "duration": 7, "deps": "80"}, {"id": "82", "phase": "8.3 SRM", "name": "הגדרת VMware SRM ל-Failover אוטומטי", "owner": "Indigo Eng", "start": "2026-04-24", "end": "2026-05-01", "startOffset": 109, "duration": 7, "deps": "81"}, {"id": "83", "phase": "9. ATP Core", "name": "בדיקות קבלה - ליבה (ATP Group A/B)", "owner": "צוות יעוץ/Elta", "start": "2026-01-05", "end": "2026-02-04", "startOffset": 0, "duration": 30, "deps": ""}, {"id": "84", "phase": "9.1 Infra", "name": "בדיקת יתירות חשמל (Pull the Plug)", "owner": "System Eng", "start": "2026-04-27", "end": "2026-04-28", "startOffset": 112, "duration": 1, "deps": "54"}, {"id": "85", "phase": "9.1 Infra", "name": "בדיקת ביצועי Storage (IOMeter)", "owner": "System Eng", "start": "2026-04-27", "end": "2026-04-29", "startOffset": 112, "duration": 2, "deps": "54"}, {"id": "86", "phase": "9.1 Infra", "name": "בדיקת יתירות שרתים (vMotion/HA)", "owner": "System Eng", "start": "2026-04-27", "end": "2026-04-29", "startOffset": 112, "duration": 2, "deps": "54"}, {"id": "87", "phase": "9.2 SIEM", "name": "בדיקת קליטת לוגים (EPS Validation)", "owner": "Indigo Eng", "start": "2026-05-14", "end": "2026-05-17", "startOffset": 129, "duration": 3, "deps": "56"}, {"id": "88", "phase": "9.2 Apps", "name": "בדיקת פונקציונליות CyConcerto (SOAR)", "owner": "Elta Eng", "start": "2026-05-24", "end": "2026-05-27", "startOffset": 139, "duration": 3, "deps": "57"}, {"id": "89", "phase": "9.2 Apps", "name": "בדיקת סריקת פגיעות CyScan", "owner": "Elta Eng", "start": "2026-05-24", "end": "2026-05-26", "startOffset": 139, "duration": 2, "deps": "57"}, {"id": "90", "phase": "9.2 Apps", "name": "בדיקת שיתוף מידע CyShare", "owner": "Elta Eng", "start": "2026-05-24", "end": "2026-05-26", "startOffset": 139, "duration": 2, "deps": "57"}, {"id": "91", "phase": "10. ATP Scenarios", "name": "בדיקות תרחישים מבצעיים (ConOps)", "owner": "Elta/Indigo", "start": "2026-01-05", "end": "2026-01-25", "startOffset": 0, "duration": 20, "deps": ""}, {"id": "92", "phase": "10.1 Case 1", "name": "תרחיש: מודיעין איומים והפצה לארגונים", "owner": "Elta Eng", "start": "2026-05-27", "end": "2026-05-30", "startOffset": 142, "duration": 3, "deps": "88"}, {"id": "93", "phase": "10.2 Case 2", "name": "תרחיש: מתקפה מגזרית רוחבית", "owner": "Elta Eng", "start": "2026-05-30", "end": "2026-06-04", "startOffset": 145, "duration": 5, "deps": "92"}, {"id": "94", "phase": "10.3 Case 3", "name": "תרחיש: סיוע פורנזי (Forensic Lab Test)", "owner": "Indigo Eng", "start": "2026-06-04", "end": "2026-06-07", "startOffset": 150, "duration": 3, "deps": "93"}, {"id": "95", "phase": "10.4 Case 4", "name": "תרחיש: חסימת EDR באתר מרוחק", "owner": "Security Eng", "start": "2026-06-07", "end": "2026-06-10", "startOffset": 153, "duration": 3, "deps": "94"}, {"id": "96", "phase": "11. ATP Remote", "name": "בדיקות קבלה - 17 אתרים (Group C)", "owner": "Indigo Eng", "start": "2026-01-05", "end": "2026-02-04", "startOffset": 0, "duration": 30, "deps": ""}, {"id": "97", "phase": "11.1 - 11.17", "name": "בדיקת ATP באתר: VRA (VPN וזמינות)", "owner": "Indigo Eng", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "98", "phase": "11.1 - 11.17", "name": "בדיקת ATP באתר: GRIDCo (VPN וזמינות)", "owner": "Indigo Eng", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "99", "phase": "11.1 - 11.17", "name": "בדיקת ATP באתר: ECG (VPN וזמינות)", "owner": "Indigo Eng", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "100", "phase": "ATP Stage A", "name": "בדיקות קבלה תשתית פיזית (Facility)", "owner": "Indigo", "start": "2026-04-14", "end": "2026-04-16", "startOffset": 99, "duration": 2, "deps": "60"}, {"id": "101", "phase": "A.1", "name": "בדיקת ויזואלית של ארונות תקשורת (Inventory)", "owner": "Indigo", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "61.0"}, {"id": "102", "phase": "A.2", "name": "בדיקת כבילה וסימון (Labeling)", "owner": "Indigo", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "61.0"}, {"id": "103", "phase": "A.3", "name": "בדיקת יתירות הזנות חשמל (Dual PDU)", "owner": "Indigo", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "101.0"}, {"id": "104", "phase": "A.4", "name": "בדיקת יתירות הזנות חשמל (Dual PDU)", "owner": "Indigo", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "103.0"}, {"id": "105", "phase": "A.5", "name": "בדיקת מערכת כיבוי אש ומיזוג בחדר השרתים", "owner": "Local", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "101.0"}, {"id": "106", "phase": "11.1 - 11.17", "name": "בדיקת ATP באתר: PURC (VPN וזמינות)", "owner": "Indigo Eng", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "107", "phase": "11.1 - 11.17", "name": "בדיקת ATP באתר: MoE (VPN וזמינות)", "owner": "Indigo Eng", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "108", "phase": "11.1 - 11.17", "name": "בדיקת ATP באתר: VRA-Generation (VPN וזמינות)", "owner": "Indigo Eng", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "109", "phase": "11.1 - 11.17", "name": "בדיקת ATP באתר: Volta Aluminium (VPN וזמינות)", "owner": "Indigo Eng", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "110", "phase": "ATP Stage B", "name": "בדיקות קבלה חומרה ושרתים (Hardware)", "owner": "System Eng", "start": "2026-04-14", "end": "2026-04-16", "startOffset": 99, "duration": 2, "deps": "61"}, {"id": "111", "phase": "B.1", "name": "בדיקת iDRAC Connectivity לכל שרתי Dell", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "62.0"}, {"id": "112", "phase": "B.2", "name": "בדיקת Storage Health (Unity Array)", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "62.0"}, {"id": "113", "phase": "B.3", "name": "בדיקת Disk Failure (הוצאת דיסק פיזי)", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "112.0"}, {"id": "114", "phase": "B.4", "name": "בדיקת יתירות מתגי Core (Switch Stack)", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "55.0"}, {"id": "115", "phase": "B.5", "name": "בדיקת Network Latency בתוך ה-DC", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "114.0"}, {"id": "116", "phase": "12. ATP DR", "name": "בדיקות קבלה - DR (Group D)", "owner": "Indigo Eng", "start": "2026-01-05", "end": "2026-01-20", "startOffset": 0, "duration": 15, "deps": ""}, {"id": "117", "phase": "12.1 Sync", "name": "בדיקת עמידה ב-RPO (Sync Validation)", "owner": "System Eng", "start": "2026-05-01", "end": "2026-05-03", "startOffset": 116, "duration": 2, "deps": "82"}, {"id": "118", "phase": "12.2 Failover", "name": "הרצת SRM Failover מלא לאתר DR", "owner": "System Eng", "start": "2026-05-03", "end": "2026-05-08", "startOffset": 118, "duration": 5, "deps": "117"}, {"id": "119", "phase": "12.3 Failback", "name": "בדיקת חזרה לאתר ראשי (Failback)", "owner": "System Eng", "start": "2026-05-08", "end": "2026-05-11", "startOffset": 123, "duration": 3, "deps": "118"}, {"id": "120", "phase": "ATP Stage C", "name": "בדיקות וירטואליזציה (VMware)", "owner": "System Eng", "start": "2026-04-14", "end": "2026-04-16", "startOffset": 99, "duration": 2, "deps": "63"}, {"id": "121", "phase": "C.1", "name": "בדיקת יתירות שרתים (HA) - כיבוי שרת פיזי", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "63.0"}, {"id": "122", "phase": "C.2", "name": "בדיקת vMotion (העברת VM ללא ניתוק)", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "121.0"}, {"id": "123", "phase": "C.3", "name": "בדיקת עומסי CPU/RAM על ה-Cluster", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "122.0"}, {"id": "124", "phase": "C.4", "name": "בדיקת יתירות vSAN (Disk Group Failure)", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "122.0"}, {"id": "130", "phase": "ATP Stage D", "name": "בדיקות מערכות ליבה (CERT Tools)", "owner": "Elta/Indigo", "start": "2026-04-14", "end": "2026-04-16", "startOffset": 99, "duration": 2, "deps": "65"}, {"id": "131", "phase": "D.1", "name": "IBM QRadar: בדיקת Log Sources מ-17 גופים", "owner": "Indigo", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "77.0"}, {"id": "132", "phase": "D.2", "name": "IBM QRadar: בדיקת Flow Sources (Network Traffic)", "owner": "Indigo", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "131.0"}, {"id": "133", "phase": "D.3", "name": "CyConcerto: בדיקת אינטגרציה מול SIEM", "owner": "Elta", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "57.0"}, {"id": "134", "phase": "D.4", "name": "CyConcerto: בדיקת Dashboard וממשק משתמש", "owner": "Elta", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "133.0"}, {"id": "135", "phase": "D.5", "name": "CyScan: הרצת סריקה על רשת ה-DC", "owner": "Elta", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "57.0"}, {"id": "136", "phase": "D.6", "name": "CyShare: העלאת והורדת קובץ מודיעין", "owner": "Elta", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "57.0"}, {"id": "137", "phase": "D.7", "name": "Centerity: בדיקת התראות NMS (IT/OT)", "owner": "Indigo", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "60.0"}, {"id": "140", "phase": "ATP Stage E", "name": "בדיקות תרחישים (Operational/ConOps)", "owner": "Elta", "start": "2026-01-05", "end": "2026-01-07", "startOffset": 0, "duration": 2, "deps": "133.0"}, {"id": "141", "phase": "E.1", "name": "תרחיש: זיהוי Brute Force ונעילת משתמש", "owner": "Elta", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "131.0"}, {"id": "142", "phase": "E.2", "name": "תרחיש: זיהוי Ransomware ב-Endpoint", "owner": "Elta", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "95.0"}, {"id": "143", "phase": "E.3", "name": "תרחיש: מתקפת DDOS מגזרית (Multi-Site)", "owner": "Elta", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "141.0"}, {"id": "144", "phase": "E.4", "name": "תרחיש: הדמיית דליפת גז (OT Alert)", "owner": "Elta", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "114.0"}, {"id": "145", "phase": "E.5", "name": "תרחיש: ניהול אירוע ב-CyConcerto מקצה לקצה", "owner": "Elta", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "143.0"}, {"id": "150", "phase": "ATP Stage F", "name": "בדיקות שרידות ואתר משני (DR)", "owner": "צוות יעוץ/Eng", "start": "2026-05-01", "end": "2026-05-03", "startOffset": 116, "duration": 2, "deps": "82"}, {"id": "151", "phase": "F.1", "name": "בדיקת Replication Health (Unity)", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "81.0"}, {"id": "152", "phase": "F.2", "name": "בדיקת SRM Recovery Plan (Simulation)", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "82.0"}, {"id": "153", "phase": "F.3", "name": "בדיקת Failover מלאה (אתר ראשי מושבת)", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "152.0"}, {"id": "154", "phase": "F.4", "name": "בדיקת זמינות אפליקציות באתר ה-DR", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "153.0"}, {"id": "155", "phase": "F.5", "name": "בדיקת Failback (חזרה לאקרה)", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "154.0"}, {"id": "160", "phase": "ATP Stage G", "name": "בדיקות 17 אתרי קצה (Remote Sites)", "owner": "Indigo", "start": "2026-01-05", "end": "2026-01-07", "startOffset": 0, "duration": 2, "deps": "77.0"}, {"id": "161", "phase": "G.1", "name": "בדיקת Firewall & VPN – VRA", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "162", "phase": "G.2", "name": "בדיקת Firewall & VPN – GRIDCo", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "163", "phase": "G.3", "name": "בדיקת Firewall & VPN – ECG", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "164", "phase": "G.4", "name": "בדיקת Firewall & VPN – NEDCo", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "165", "phase": "G.5", "name": "בדיקת Firewall & VPN – BPA", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "166", "phase": "G.6", "name": "בדיקת Firewall & VPN – GNPC", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "167", "phase": "G.7", "name": "בדיקת Firewall & VPN – GNGC", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "168", "phase": "G.8", "name": "בדיקת Firewall & VPN – BOST", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "169", "phase": "G.9", "name": "בדיקת Firewall & VPN – Energy Commission", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "170", "phase": "G.10", "name": "בדיקת Firewall & VPN – PURC", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "171", "phase": "G.11", "name": "בדיקת Firewall & VPN – MoE", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "172", "phase": "G.12", "name": "בדיקת Firewall & VPN – VRA-Generation", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "173", "phase": "G.13", "name": "בדיקת Firewall & VPN – Volta Aluminium", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "174", "phase": "G.14", "name": "בדיקת Firewall & VPN – Tema Oil Refinery", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "175", "phase": "G.15", "name": "בדיקת Firewall & VPN – Ghana Gas", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "176", "phase": "G.16", "name": "בדיקת Firewall & VPN – Takoradi Plant", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "177", "phase": "G.17", "name": "בדיקת Firewall & VPN – Karpowership", "owner": "Indigo", "start": "2026-04-24", "end": "2026-04-25", "startOffset": 109, "duration": 1, "deps": "77"}, {"id": "178", "phase": "G.18", "name": "בדיקת Local Backup (Veeam) בכל אתר", "owner": "System", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "161.0"}, {"id": "179", "phase": "G.19", "name": "בדיקת ניטור OT Tap וזיהוי פרוטוקול", "owner": "OT Exp", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "78.0"}, {"id": "180", "phase": "Closure", "name": "סיכום, תיעוד ומסירה", "owner": "צוות יעוץ", "start": "2026-01-05", "end": "2026-01-07", "startOffset": 0, "duration": 2, "deps": "155.0"}, {"id": "181", "phase": "13.1", "name": "איסוף חתימות ATP מכל 17 הגופים", "owner": "צוות יעוץ", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "177.0"}, {"id": "182", "phase": "13.2", "name": "הכנת דוח ATP סופי (Final Test Report)", "owner": "צוות יעוץ", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "181.0"}, {"id": "183", "phase": "13.3", "name": "מסירת ספר \"As-Built\" מעודכן", "owner": "צוות יעוץ", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "182.0"}, {"id": "184", "phase": "13.4", "name": "העברת אחריות לצוות O&M (תמיכה)", "owner": "צוות יעוץ", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "183.0"}, {"id": "185", "phase": "13.5", "name": "חתימה על תעודת קבלה סופית (PAC)", "owner": "צוות יעוץ", "start": "2026-01-05", "end": "2026-01-06", "startOffset": 0, "duration": 1, "deps": "184.0"}];
-const STORE_KEY = "gantt_v11_edits";
-const BASELINE_KEY = "gantt_v11_baseline";
-const UI_KEY = "gantt_v11_ui";
+/*
+  IMPORTANT:
+  כדי לכלול את כל המשימות שלך, החלף את BASE כאן במערך המלא שלך.
+*/
+const BASE = [
+  {"id":"1","phase":"1. Management","name":"פתיחת פרויקט וניהול (Phase 1)","owner":"צוות יעוץ","start":"2026-01-05","end":"2026-02-04","startOffset":0,"duration":30,"deps":"","milestone":false,"notes":""},
+  {"id":"2","phase":"1.1 Admin","name":"פגישת קיק-אוף והתנעת צוות היגוי","owner":"צוות יעוץ","start":"2026-01-05","end":"2026-01-07","startOffset":0,"duration":2,"deps":"","milestone":true,"notes":"דוגמה: סמן milestone=true כדי לקבל יהלום"},
+  {"id":"3","phase":"1.1 Admin","name":"הקמת משרד PMO פיזי באקרה (Ghana)","owner":"Local Ops","start":"2026-01-07","end":"2026-01-21","startOffset":2,"duration":14,"deps":"2","milestone":false,"notes":""},
+  {"id":"4","phase":"2. Design","name":"CDR - תכנון הנדסי מפורט (Design Phase)","owner":"Engineering","start":"2026-01-05","end":"2026-03-06","startOffset":0,"duration":60,"deps":"","milestone":false,"notes":""}
+];
 
-// ===== Helpers =====
-function daysBetween(a,b){ return Math.round((b-a)/MS_DAY); }
-function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
-function fmt(d){
-  const yyyy=d.getFullYear();
-  const mm=String(d.getMonth()+1).padStart(2,'0');
-  const dd=String(d.getDate()).padStart(2,'0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-function parseDepIds(depStr){
-  const d = String(depStr||"").trim();
-  if(!d) return [];
-  return d.split(/[,\s]+/).map(x=>x.trim()).filter(Boolean).map(x=>{
-    const m = x.match(/^(\d+)$/);
-    return m ? m[1] : null;
-  }).filter(Boolean);
-}
-function isMilestone(t){
-  const dur = Number(t.duration ?? 1);
-  const n = ((t.notes||"") + " " + (t.name||"")).trim();
-  const flagged = /(milestone|אבן\s*דרך)/i.test(n);
-  return (dur === 0) || (flagged && dur <= 2);
-}
+let ALL = BASE.map(t => ({...t}));
+const STORE_KEY = "gantt_tasks_v6_edits";
+const STORE_KEY_CSV = "gantt_tasks_v6_csv_snapshot";
+
+// ===== Category coloring =====
 function categoryOf(t){
-  const p=(t.phase||"").trim();
-  if(!p) return "Other";
-  if(p.toLowerCase().startsWith("atp")) return "ATP";
-  if(p.toLowerCase()==="closure") return "Closure";
-  const first=p.split(/\s+/)[0];
-  const m=first.match(/^([0-9]+)(?:\.|$)/);
-  if(m) return "Phase "+m[1];
-  const m2=first.match(/^([A-Z])\./i);
-  if(m2) return "Group "+m2[1].toUpperCase();
+  const p = (t.phase||"").trim();
+  if (!p) return "Other";
+  if (p.toLowerCase().startsWith("atp")) return "ATP";
+  if (p.toLowerCase() === "closure") return "Closure";
+  const first = p.split(/\s+/)[0];
+  const m = first.match(/^([0-9]+)(?:\.|$)/);
+  if (m) return "Phase " + m[1];
+  const m2 = first.match(/^([A-Z])\./i);
+  if (m2) return "Group " + m2[1].toUpperCase();
   return first;
 }
 function colorForCategory(cat){
-  const palette=["#2563eb","#16a34a","#f59e0b","#dc2626","#9333ea","#0891b2","#7c3aed","#0ea5e9","#22c55e","#ea580c","#be123c","#0f766e","#4f46e5","#a16207","#1d4ed8"];
-  let h=0; for(let i=0;i<cat.length;i++) h=(h*31+cat.charCodeAt(i))>>>0;
-  return palette[h%palette.length];
+  const palette = ["#2563eb","#16a34a","#f59e0b","#dc2626","#9333ea","#0891b2","#7c3aed","#0ea5e9","#22c55e","#ea580c","#be123c","#0f766e","#4f46e5","#a16207","#1d4ed8"];
+  let h=0; for (let i=0;i<cat.length;i++) h = (h*31 + cat.charCodeAt(i)) >>> 0;
+  return palette[h % palette.length];
 }
-function depsLabel(t){ const d=String(t.deps||"").trim(); if(!d) return ""; return d.length>30 ? (d.slice(0,30)+"…") : d; }
+function depsLabel(t){
+  const d = (t.deps||"").trim();
+  if (!d) return "";
+  return d.length > 30 ? (d.slice(0,30) + "…") : d;
+}
 
-// ===== Storage =====
-function loadJSON(key){ try{ const r=localStorage.getItem(key); return r?JSON.parse(r):null; }catch(e){ return null; } }
-function saveJSON(key,obj){ try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){} }
+function loadEdits() {
+  try { const raw = localStorage.getItem(STORE_KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; }
+}
+function saveEdits(edits) { try { localStorage.setItem(STORE_KEY, JSON.stringify(edits)); } catch(e){} }
 
-// ===== Working state =====
-let ALL = BASE.map(t => ({...t, status: t.status || "not_started"}));
-
+function daysBetween(a,b){ return Math.round((b-a)/MS_DAY); }
+function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+function fmt(d){
+  const yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+  return `${yyyy}-${mm}-${dd}`;
+}
 function calcDatesFromOffsets(t){
-  const s = new Date(MIN_START.getTime() + (Number(t.startOffset||0))*MS_DAY);
-  const dur = Math.max(0, Number(t.duration ?? 1));
-  const e = new Date(s.getTime() + dur*MS_DAY);
-  t.start = fmt(s);
-  t.end = fmt(e);
+  const s = new Date(MIN_START.getTime() + (t.startOffset||0)*MS_DAY);
+  const e = new Date(s.getTime() + Math.max(1,(t.duration||1))*MS_DAY);
+  t.start = fmt(s); t.end = fmt(e);
 }
 
-function applyEdits(){
-  const edits = loadJSON(STORE_KEY);
-  if(!edits) return;
+// Apply local edits
+(function applyLocal(){
+  const edits = loadEdits(); if (!edits) return;
   ALL = ALL.map(t => {
-    const e = edits[t.id];
-    if(!e) return t;
-    return {...t, startOffset:e.startOffset, duration:e.duration, start:e.start, end:e.end, status:e.status ?? t.status, notes:e.notes ?? t.notes, owner:e.owner ?? t.owner};
+    const e = edits[t.id]; if (!e) return t;
+    return {...t, ...e};
+  });
+})();
+ALL.forEach(t => calcDatesFromOffsets(t));
+
+// ===== Owner filter init =====
+const ownerSel = document.getElementById('ownerFilter');
+function rebuildOwnerOptions(tasks){
+  ownerSel.innerHTML = '<option value="">כל ה-Owners</option>';
+  Array.from(new Set(tasks.map(t => (t.owner||'').trim()).filter(Boolean))).sort().forEach(o=>{
+    const opt=document.createElement('option'); opt.value=o; opt.textContent=o; ownerSel.appendChild(opt);
   });
 }
-function persistOne(t){
-  const edits = loadJSON(STORE_KEY) || {};
-  edits[t.id] = {
-    startOffset: t.startOffset,
-    duration: t.duration,
-    start: t.start,
-    end: t.end,
-    status: t.status,
-    notes: t.notes||"",
-    owner: t.owner||""
-  };
-  saveJSON(STORE_KEY, edits);
-}
+rebuildOwnerOptions(ALL);
 
-// ===== Baseline =====
-function loadBaseline(){ return loadJSON(BASELINE_KEY); }
-function saveBaseline(){
-  const b = {};
-  ALL.forEach(t => { b[t.id] = { startOffset:Number(t.startOffset||0), duration:Number(t.duration||0) }; });
-  saveJSON(BASELINE_KEY, b);
-  render();
-}
-function baselineFor(id){
-  const b = loadBaseline();
-  return b ? b[id] : null;
-}
-
-// ===== UI state =====
-function loadUI(){ return loadJSON(UI_KEY) || { expandedPhases: {}, showListMobile:false }; }
-function saveUI(ui){ saveJSON(UI_KEY, ui); }
-
-// ===== Critical Path =====
-function computeCriticalSet(){
-  const byId = new Map(ALL.map(t=>[String(t.id), t]));
-  const indeg = new Map(); const succ = new Map();
-  ALL.forEach(t=>{
-    const tid=String(t.id);
-    const deps=parseDepIds(t.deps);
-    indeg.set(tid, deps.length);
-    deps.forEach(d=>{ if(!succ.has(d)) succ.set(d, []); succ.get(d).push(tid); });
-  });
-  const q=[]; indeg.forEach((v,k)=>{ if(v===0) q.push(k); });
-  const order=[];
-  while(q.length){ const x=q.shift(); order.push(x); (succ.get(x)||[]).forEach(y=>{ indeg.set(y, indeg.get(y)-1); if(indeg.get(y)===0) q.push(y); }); }
-  const ids = (order.length===ALL.length) ? order : ALL.map(t=>String(t.id)).sort((a,b)=>Number(a)-Number(b));
-  const dist = new Map(); const prev = new Map();
-  ids.forEach(id=>{
-    const t = byId.get(id); if(!t) return;
-    let best=0; let bestPrev=null;
-    parseDepIds(t.deps).forEach(d=>{
-      const dv = dist.get(d) ?? 0;
-      const dt = byId.get(d);
-      const add = Math.max(0, Number(dt?.duration||0));
-      const cand = dv + add;
-      if(cand > best){ best=cand; bestPrev=d; }
-    });
-    dist.set(id, best);
-    if(bestPrev) prev.set(id, bestPrev);
-  });
-  let endId=null; let bestEnd=-1;
-  ids.forEach(id=>{
-    const t = byId.get(id);
-    const score = (dist.get(id) ?? 0) + Math.max(0, Number(t?.duration||0));
-    if(score > bestEnd){ bestEnd=score; endId=id; }
-  });
-  const crit = new Set();
-  let cur=endId;
-  while(cur){ crit.add(cur); cur = prev.get(cur); }
-  return crit;
-}
-
-// ===== Panel =====
-function openPanel(t){
-  const p = document.getElementById('sidePanel');
-  const b = document.getElementById('panelBody');
-  b.innerHTML = `
-    <div style="font-weight:900;font-size:14px;margin-bottom:6px">#${t.id} · ${t.name}</div>
-    <div style="color:var(--muted);font-size:12px;margin-bottom:10px">${t.phase||''}</div>
-
-    <label>אחראי (Owner)</label>
-    <input id="pOwner" value="${(t.owner||"").replace(/"/g,'&quot;')}"/>
-
-    <label>סטטוס</label>
-    <select id="pStatus">
-      <option value="not_started"${t.status==="not_started"?" selected":""}>לא התחיל</option>
-      <option value="in_progress"${t.status==="in_progress"?" selected":""}>בתהליך</option>
-      <option value="done"${t.status==="done"?" selected":""}>הושלם</option>
-    </select>
-
-    <label>משך (ימים)</label>
-    <input id="pDur" type="number" min="0" value="${Number(t.duration||0)}"/>
-
-    <label>תלויות (IDs)</label>
-    <input value="${t.deps||''}" disabled/>
-
-    <label>הערות</label>
-    <textarea id="pNotes">${t.notes||''}</textarea>
-
-    <div class="rowbtn">
-      <button class="btn-primary" id="pSave">שמור</button>
-      <button class="btn-ghost" id="pMilestone">סמן כ‑Milestone</button>
-    </div>
-  `;
-  document.getElementById('pSave').onclick = ()=>{
-    const owner = document.getElementById('pOwner').value.trim();
-    const status = document.getElementById('pStatus').value;
-    const dur = Math.max(0, Number(document.getElementById('pDur').value||0));
-    const notes = document.getElementById('pNotes').value;
-    t.owner = owner;
-    t.status = status;
-    t.duration = dur;
-    t.notes = notes;
-    calcDatesFromOffsets(t);
-    persistOne(t);
-    render();
-    closePanel();
-  };
-  document.getElementById('pMilestone').onclick = ()=>{
-    t.duration = 0;
-    calcDatesFromOffsets(t);
-    persistOne(t);
-    render();
-    closePanel();
-  };
-  p.style.left='0';
-  p.setAttribute('aria-hidden','false');
-}
-function closePanel(){
-  const p = document.getElementById('sidePanel');
-  p.style.left='-420px';
-  p.setAttribute('aria-hidden','true');
-}
-document.getElementById('closePanel').onclick = closePanel;
-
-// ===== Timeline =====
-function pxPerDayForZoom(){
-  const z = document.getElementById('zoom').value;
-  return (z==='day') ? 18 : (z==='week' ? 7 : 2.5);
-}
+// ===== Zoom =====
+function pxPerDayForZoom(){ const z=document.getElementById('zoom').value; return (z==='day')?18:(z==='week'?7:2.5); }
 function buildTicks(pxPerDay){
-  const tl = document.getElementById('timeline');
-  tl.innerHTML='';
-  const ticks = document.createElement('div');
-  ticks.className='ticks';
-  const totalDays = daysBetween(MIN_START, MAX_END);
-  const zoom = document.getElementById('zoom').value;
-  const step = zoom==='day' ? 1 : (zoom==='week' ? 7 : 30);
-  for(let i=0;i<=totalDays;i++){
-    const d = new Date(MIN_START.getTime()+i*MS_DAY);
-    const tick = document.createElement('div');
-    tick.className='tick';
-    tick.style.width = pxPerDay+'px';
-    tick.textContent = (i % step === 0) ? fmt(d) : '';
+  const tl=document.getElementById('timeline'); tl.innerHTML='';
+  const ticks=document.createElement('div'); ticks.className='ticks';
+  const totalDays=daysBetween(MIN_START, MAX_END);
+  const zoom=document.getElementById('zoom').value;
+  const step = zoom==='day'?1:(zoom==='week'?7:30);
+
+  for (let i=0;i<=totalDays;i++){
+    const d=new Date(MIN_START.getTime()+i*MS_DAY);
+    const tick=document.createElement('div');
+    tick.className='tick'; tick.style.width=pxPerDay+'px';
+    tick.textContent = (i%step===0)?fmt(d):'';
     ticks.appendChild(tick);
   }
-  ticks.style.width = ((totalDays+1)*pxPerDay)+'px';
+  ticks.style.width=((totalDays+1)*pxPerDay)+'px';
   tl.appendChild(ticks);
 }
 
-// ===== Dragging =====
+function persistOne(t){
+  const edits = loadEdits() || {};
+  edits[t.id] = {
+    id:String(t.id),
+    phase:t.phase||"",
+    name:t.name||"",
+    owner:t.owner||"",
+    startOffset:Number(t.startOffset||0),
+    duration:Number(t.duration||1),
+    deps:t.deps||"",
+    milestone: !!t.milestone,
+    notes: t.notes||"",
+    start:t.start, end:t.end
+  };
+  saveEdits(edits);
+}
 function findTask(id){ return ALL.find(x=>String(x.id)===String(id)); }
 
-function attachDrag(el, pxPerDay, isMs=false){
-  let mode="move"; let startX=0; let origOffset=0; let origDur=0;
-  function onDown(e){
-    const handle = e.target?.dataset?.handle;
-    if(isMs) mode="move";
-    else mode = handle==='left' ? 'resizeL' : (handle==='right' ? 'resizeR' : 'move');
-    el.setPointerCapture(e.pointerId);
-    el.classList.add('dragging');
-    startX = e.clientX;
-    const t = findTask(el.dataset.id);
-    origOffset = Number(t.startOffset||0);
-    origDur = Number(t.duration||0);
+// ===== Drag =====
+function attachDrag(barEl, pxPerDay){
+  let mode="move", startX=0, origOffset=0, origDuration=0;
+
+  function onPointerDown(e){
+    const handle=e.target?.dataset?.handle;
+    mode = handle==='left'?'resizeL':(handle==='right'?'resizeR':'move');
+    barEl.setPointerCapture(e.pointerId);
+    barEl.classList.add('dragging');
+    startX=e.clientX;
+    const t=findTask(barEl.dataset.id);
+    origOffset=t.startOffset; origDuration=t.duration;
     e.preventDefault(); e.stopPropagation();
   }
-  function onMove(e){
-    if(!el.classList.contains('dragging')) return;
-    const dx = e.clientX - startX;
-    const deltaDays = Math.round(dx / pxPerDay);
-    const t = findTask(el.dataset.id);
-    if(!t) return;
-    if(mode==='move'){
-      t.startOffset = clamp(origOffset + deltaDays, 0, 100000);
-    } else if(mode==='resizeR'){
-      t.duration = clamp(origDur + deltaDays, 1, 100000);
-    } else if(mode==='resizeL'){
-      const newOffset = origOffset + deltaDays;
-      const newDur = origDur - deltaDays;
-      if(newDur >= 1){ t.startOffset = clamp(newOffset,0,100000); t.duration = newDur; }
+
+  function onPointerMove(e){
+    if (!barEl.classList.contains('dragging')) return;
+    const dx=e.clientX-startX;
+    const deltaDays=Math.round(dx/pxPerDay);
+    const t=findTask(barEl.dataset.id); if (!t) return;
+
+    if (mode==='move'){
+      t.startOffset = clamp(origOffset+deltaDays,0,100000);
+    } else if (mode==='resizeR'){
+      t.duration = clamp(origDuration+deltaDays,1,100000);
+    } else if (mode==='resizeL'){
+      const newOffset=origOffset+deltaDays;
+      const newDur=origDuration-deltaDays;
+      if (newDur>=1){ t.startOffset=clamp(newOffset,0,100000); t.duration=newDur; }
     }
+
     calcDatesFromOffsets(t);
-    el.style.left = (t.startOffset*pxPerDay)+'px';
-    if(!isMs){
-      el.style.width = (Math.max(1, Number(t.duration||1))*pxPerDay)+'px';
-      el.title = `${t.name} (Start: ${t.start}, End: ${t.end})`;
-    } else {
-      el.title = `${t.name} (Milestone) ${t.start}`;
-    }
+    barEl.style.left=(t.startOffset*pxPerDay)+'px';
+    barEl.style.width=(Math.max(1,t.duration)*pxPerDay)+'px';
+    barEl.title=`${t.name} (Start: ${t.start}, End: ${t.end})`;
+    updateCharts(); // live
   }
-  function onUp(e){
-    if(!el.classList.contains('dragging')) return;
-    el.classList.remove('dragging');
-    const t = findTask(el.dataset.id);
-    if(t) persistOne(t);
-    try{ el.releasePointerCapture(e.pointerId); }catch(_e){}
+
+  function onPointerUp(e){
+    if (!barEl.classList.contains('dragging')) return;
+    barEl.classList.remove('dragging');
+    const t=findTask(barEl.dataset.id);
+    if (t) persistOne(t);
+    try{ barEl.releasePointerCapture(e.pointerId);}catch(_){}
   }
-  el.addEventListener('pointerdown', onDown);
-  el.addEventListener('pointermove', onMove);
-  el.addEventListener('pointerup', onUp);
-  el.addEventListener('pointercancel', onUp);
+
+  barEl.addEventListener('pointerdown', onPointerDown);
+  barEl.addEventListener('pointermove', onPointerMove);
+  barEl.addEventListener('pointerup', onPointerUp);
+  barEl.addEventListener('pointercancel', onPointerUp);
 }
 
-// ===== Auto Schedule =====
-function autoScheduleAll(){
-  const byId = new Map(ALL.map(t=>[String(t.id), t]));
-  const indeg = new Map(); const succ = new Map();
-  ALL.forEach(t=>{
-    const tid=String(t.id);
-    const deps=parseDepIds(t.deps);
-    indeg.set(tid, deps.length);
-    deps.forEach(d=>{ if(!succ.has(d)) succ.set(d, []); succ.get(d).push(tid); });
-  });
-  const q=[]; indeg.forEach((v,k)=>{ if(v===0) q.push(k); });
-  const order=[];
-  while(q.length){
-    const x=q.shift();
-    order.push(x);
-    (succ.get(x)||[]).forEach(y=>{
-      indeg.set(y, indeg.get(y)-1);
-      if(indeg.get(y)===0) q.push(y);
-    });
+// ===== Milestone shape =====
+function applyMilestoneStyle(barEl, isMilestone){
+  if (!isMilestone) {
+    barEl.style.borderRadius = "10px";
+    barEl.style.transform = "none";
+    barEl.style.width = barEl.style.width; // keep
+    return;
   }
-  const ids = (order.length===ALL.length) ? order : ALL.map(t=>String(t.id)).sort((a,b)=>Number(a)-Number(b));
-  ids.forEach(id=>{
-    const t = byId.get(id); if(!t) return;
-    let best=0;
-    parseDepIds(t.deps).forEach(d=>{
-      const dt = byId.get(d); if(!dt) return;
-      const dur = Math.max(0, Number(dt.duration||0));
-      best = Math.max(best, Number(dt.startOffset||0) + dur);
-    });
-    t.startOffset = best;
-    calcDatesFromOffsets(t);
-    persistOne(t);
-  });
-  render();
+  // diamond look: keep width minimal based on pxPerDay later in render
+  barEl.style.borderRadius = "4px";
+  barEl.style.transform = "rotate(45deg)";
 }
 
-// ===== Export (Hebrew + BOM) =====
-function exportCSV(){
-  const header = ["מזהה","קטגוריה/שלב","שם משימה","אחראי","סטטוס","תאריך התחלה","תאריך סיום","משך (ימים)","תלויות","הערות"];
-  const rows = [header.join(",")];
-  const esc = (v) => {
-    const s = String(v ?? "");
-    if (s.includes('"') || s.includes(",") || s.includes("\n") || s.includes("\r")) return '"' + s.replace(/"/g,'""') + '"';
-    return s;
-  };
-  ALL.forEach(t=>{
-    rows.push([
-      esc(t.id), esc(t.phase), esc(t.name), esc(t.owner),
-      esc(t.status), esc(t.start), esc(t.end), esc(t.duration),
-      esc(t.deps||""), esc(t.notes||"")
-    ].join(","));
-  });
-  const bom="\uFEFF";
-  const csvText = bom + rows.join("\r\n");
-  const blob = new Blob([csvText], {type:"text/csv;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href=url; a.download="גאנט_ייצוא.csv";
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url), 5000);
-}
-
-// ===== Rendering =====
-let PHASE_GROUPS = []; // for expand/collapse
-
-function updateKPIs(critSet){
-  const total = ALL.length;
-  const done = ALL.filter(t=>t.status==="done").length;
-  const pct = total? Math.round((done/total)*100):0;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const overdue = ALL.filter(t=>{
-    if(t.status==="done") return false;
-    const end = new Date(t.end);
-    return end < today;
-  }).length;
-  document.getElementById('kTotal').textContent = total;
-  document.getElementById('kRange').textContent = `${fmt(MIN_START)} עד ${fmt(MAX_END)}`;
-  document.getElementById('kProgress').textContent = pct + "%";
-  document.getElementById('kDone').textContent = `${done} הושלמו`;
-  document.getElementById('kOverdue').textContent = overdue;
-  document.getElementById('kCritical').textContent = critSet.size;
-}
-
+// ===== Render =====
 function render(){
-  const ui = loadUI();
-  const q = (document.getElementById('q').value||'').toLowerCase().trim();
-  const ownerVal = (document.getElementById('ownerFilter').value||'').toLowerCase();
-  const stVal = (document.getElementById('statusFilter').value||'').toLowerCase();
-  const pxPerDay = pxPerDayForZoom();
+  const q=(document.getElementById('q').value||'').toLowerCase().trim();
+  const ownerVal=(document.getElementById('ownerFilter').value||'').toLowerCase();
+  const pxPerDay=pxPerDayForZoom();
 
   const baseList = !q ? ALL : ALL.filter(t =>
     (t.name||'').toLowerCase().includes(q) ||
     (t.owner||'').toLowerCase().includes(q) ||
     (t.phase||'').toLowerCase().includes(q) ||
-    (String(t.id)||'').toLowerCase().includes(q)
+    String(t.id||'').toLowerCase().includes(q)
   );
-  const ownerList = !ownerVal ? baseList : baseList.filter(t => (t.owner||'').toLowerCase()===ownerVal);
-  const list = !stVal ? ownerList : ownerList.filter(t => (t.status||'')===stVal);
+  const list = !ownerVal ? baseList : baseList.filter(t => (t.owner||'').toLowerCase()===ownerVal);
 
   // Legend
-  const legend = document.getElementById('legend');
-  const cats = Array.from(new Set(list.map(t => categoryOf(t)))).sort();
-  legend.innerHTML='';
-  cats.forEach(cat => {
-    const item = document.createElement('div'); item.className='lg-item';
-    const sw = document.createElement('div'); sw.className='sw'; sw.style.background=colorForCategory(cat);
-    const tx = document.createElement('div'); tx.textContent=cat;
-    item.appendChild(sw); item.appendChild(tx); legend.appendChild(item);
-  });
-
-  const critSet = computeCriticalSet();
-  updateKPIs(critSet);
-
-  // Left list (grouped)
-  const left = document.getElementById('left');
-  left.innerHTML='';
-  PHASE_GROUPS = [];
-  const h = document.createElement('div');
-  h.className='row header';
-  h.innerHTML = `<div class="meta">ID</div><div class="title">שלב / משימה</div><div class="meta">Owner</div>`;
-  left.appendChild(h);
-
-  const groups = {};
-  list.forEach(t=>{ const g=t.phase||'Other'; if(!groups[g]) groups[g]=[]; groups[g].push(t); });
-  Object.keys(groups).sort().forEach(phase=>{
-    const gh = document.createElement('div');
-    gh.className='row group';
-    const isOpen = !!ui.expandedPhases[phase];
-    gh.innerHTML = `<div class="meta"></div><div class="title">${isOpen?'▾':'▸'} ${phase}</div><div class="meta">${groups[phase].length}</div>`;
-    left.appendChild(gh);
-
-    const rows=[];
-    groups[phase].forEach(t=>{
-      const r = document.createElement('div');
-      r.className='row task';
-      r.style.display = isOpen ? 'flex' : 'none';
-      r.innerHTML = `<div class="meta">#${t.id}</div><div class="title">${t.name}</div><div class="meta">${t.owner||''}</div>`;
-      r.onclick = ()=>openPanel(t);
-      rows.push(r); left.appendChild(r);
+  const legend=document.getElementById('legend');
+  if (legend){
+    const cats=Array.from(new Set(list.map(t=>categoryOf(t)))).sort();
+    legend.innerHTML='';
+    cats.forEach(cat=>{
+      const item=document.createElement('div'); item.className='lg-item';
+      const sw=document.createElement('div'); sw.className='sw'; sw.style.background=colorForCategory(cat);
+      const tx=document.createElement('div'); tx.textContent=cat;
+      item.appendChild(sw); item.appendChild(tx); legend.appendChild(item);
     });
+  }
 
-    gh.onclick = ()=>{
-      const now = !(ui.expandedPhases[phase]);
-      ui.expandedPhases[phase]=now; saveUI(ui);
-      gh.querySelector('.title').textContent = (now?'▾ ':'▸ ') + phase;
-      rows.forEach(r=>r.style.display = now?'flex':'none');
-    };
-    PHASE_GROUPS.push({phase, rows, header:gh});
+  const left=document.getElementById('left');
+  left.innerHTML='';
+  const h=document.createElement('div');
+  h.className='row'; h.style.fontWeight='900';
+  h.innerHTML = `<div class="meta">ID</div><div class="title">משימה</div><div class="meta">Owner</div>`;
+  left.appendChild(h);
+  list.forEach(t=>{
+    const r=document.createElement('div'); r.className='row';
+    r.innerHTML = `<div class="meta">#${t.id}</div><div class="title">${t.name}</div><div class="meta">${t.owner||''}</div>`;
+    left.appendChild(r);
   });
 
-  // Timeline & bars
   buildTicks(pxPerDay);
 
-  const bars = document.getElementById('bars');
+  const bars=document.getElementById('bars');
   bars.innerHTML='';
-  const totalDays = daysBetween(MIN_START, MAX_END);
-  const width = ((totalDays+1)*pxPerDay);
 
-  // SVG for dependencies
-  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-  svg.classList.add('dep-layer');
-  svg.setAttribute('width', width);
-  svg.setAttribute('height', list.length*34);
-  svg.setAttribute('viewBox', `0 0 ${width} ${list.length*34}`);
-  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
-  const marker = document.createElementNS('http://www.w3.org/2000/svg','marker');
+  // Dependency overlay SVG
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.classList.add('dep-layer'); svg.setAttribute('aria-hidden','true');
+  const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+  const marker=document.createElementNS('http://www.w3.org/2000/svg','marker');
   marker.setAttribute('id','arrow'); marker.setAttribute('markerWidth','10'); marker.setAttribute('markerHeight','10');
   marker.setAttribute('refX','8'); marker.setAttribute('refY','3'); marker.setAttribute('orient','auto');
-  const ap = document.createElementNS('http://www.w3.org/2000/svg','path');
+  const ap=document.createElementNS('http://www.w3.org/2000/svg','path');
   ap.setAttribute('d','M0,0 L8,3 L0,6 Z'); ap.setAttribute('fill','#64748b');
-  marker.appendChild(ap); defs.appendChild(marker); svg.appendChild(defs);
-  bars.appendChild(svg);
+  marker.appendChild(ap); defs.appendChild(marker); svg.appendChild(defs); bars.appendChild(svg);
 
-  // Today line
-  const today = new Date(); today.setHours(0,0,0,0);
-  const todayOffset = daysBetween(MIN_START, today);
-  const tline = document.createElement('div');
-  tline.className='today-line';
-  tline.style.left = (todayOffset*pxPerDay)+'px';
-  tline.style.height = (list.length*34)+'px';
-  bars.appendChild(tline);
+  const totalDays=daysBetween(MIN_START, MAX_END);
+  const width=((totalDays+1)*pxPerDay);
 
-  // Render rows + bars
   list.forEach((t, idx)=>{
-    const row = document.createElement('div');
+    const row=document.createElement('div');
     row.className='bar-row';
-    row.style.width = width+'px';
+    row.style.width=width+'px';
 
-    // Baseline
-    const b = baselineFor(t.id);
-    if(b){
-      const bl = document.createElement('div');
-      bl.className='baseline';
-      bl.style.left = (Number(b.startOffset||0)*pxPerDay)+'px';
-      const bd = Math.max(0, Number(b.duration||0));
-      bl.style.width = (Math.max(1, bd)*pxPerDay)+'px';
-      row.appendChild(bl);
-    }
+    const bar=document.createElement('div');
+    bar.className='bar';
+    bar.dataset.id=t.id;
 
-    const cat = categoryOf(t);
-    const col = colorForCategory(cat);
-    const ms = isMilestone(t);
+    const isMs = !!t.milestone;
+    const durPx = Math.max(1,t.duration)*pxPerDay;
+    const msSize = Math.max(10, Math.min(18, pxPerDay*2.2)); // diamond size
+    bar.style.left=(t.startOffset*pxPerDay)+'px';
+    bar.style.width = isMs ? (msSize+'px') : (durPx+'px');
 
-    const isDone = t.status==="done";
-    const endD = new Date(t.end);
-    const isOver = (!isDone && endD < today);
+    const cat=categoryOf(t);
+    const col=colorForCategory(cat);
+    bar.style.background=col;
 
-    if(ms){
-      const d = document.createElement('div');
-      d.className='milestone';
-      d.dataset.id = t.id;
-      d.style.left = (t.startOffset*pxPerDay)+'px';
-      d.style.background = isOver ? "var(--danger)" : col;
-      if(critSet.has(String(t.id))) d.classList.add('critical');
-      if(isDone) d.classList.add('done');
-      d.title = `${t.name} (Milestone) ${t.start}`;
-      d.addEventListener('click', ()=>openPanel(t));
-      attachDrag(d, pxPerDay, true);
-      row.appendChild(d);
-    } else {
-      const bar = document.createElement('div');
-      bar.className='bar';
-      bar.dataset.id = t.id;
-      bar.style.left = (t.startOffset*pxPerDay)+'px';
-      bar.style.width = (Math.max(1, Number(t.duration||1))*pxPerDay)+'px';
-      bar.style.background = isOver ? "var(--danger)" : col;
-      if(critSet.has(String(t.id))) bar.classList.add('critical');
-      if(isDone) bar.classList.add('done');
-      if(isOver) bar.classList.add('overdue');
+    bar.title=`${t.name} (Start: ${t.start}, End: ${t.end})`;
+    applyMilestoneStyle(bar, isMs);
 
-      const lbl = document.createElement('div');
-      lbl.className='label';
-      lbl.textContent = `#${t.id} · ${t.name}`;
+    // Labels: if milestone rotate breaks readability – show only id
+    const lbl=document.createElement('div');
+    lbl.className='label';
+    lbl.textContent = isMs ? `#${t.id}` : `#${t.id} · ${t.name}`;
 
-      const dep = depsLabel(t);
-      const depEl = document.createElement('div');
-      depEl.className='deps';
-      depEl.textContent = dep ? `Deps: ${dep}` : '';
+    const dep=depsLabel(t);
+    const depEl=document.createElement('div');
+    depEl.className='deps';
+    depEl.textContent = dep ? `Deps: ${dep}` : '';
 
-      const hL = document.createElement('div'); hL.className='handle left'; hL.dataset.handle='left';
-      const hR = document.createElement('div'); hR.className='handle right'; hR.dataset.handle='right';
+    // When rotated, hide deps text
+    if (isMs) { depEl.textContent=''; lbl.style.transform="rotate(-45deg)"; lbl.style.left="6px"; lbl.style.right="6px"; }
 
-      bar.appendChild(lbl); bar.appendChild(depEl);
-      bar.appendChild(hL); bar.appendChild(hR);
-      bar.addEventListener('click', ()=>openPanel(t));
+    bar.appendChild(lbl);
+    bar.appendChild(depEl);
 
-      attachDrag(bar, pxPerDay, false);
-      row.appendChild(bar);
-    }
+    const hL=document.createElement('div'); hL.className='handle left'; hL.dataset.handle='left';
+    const hR=document.createElement('div'); hR.className='handle right'; hR.dataset.handle='right';
+    if (!isMs){ bar.appendChild(hL); bar.appendChild(hR); } // milestones not resizable
 
+    bar.addEventListener('dblclick', ()=>{
+      alert(`Task #${t.id}\n${t.name}\nPhase: ${t.phase}\nOwner: ${t.owner}\nStart: ${t.start}\nEnd: ${t.end}\nDuration: ${t.duration}d\nMilestone: ${t.milestone?'YES':'NO'}\nDeps: ${t.deps||'-'}\nNotes: ${t.notes||'-'}`);
+    });
+
+    attachDrag(bar, pxPerDay);
+    row.appendChild(bar);
     bars.appendChild(row);
   });
 
-  // Draw dependency lines (only among visible tasks)
-  const centerY = (i) => (i*34 + 17);
-  const barStartX = (tt) => (Number(tt.startOffset||0) * pxPerDay);
-  const barEndX = (tt) => ((Number(tt.startOffset||0) + Math.max(0, Number(tt.duration||0))) * pxPerDay);
-  const visibleById = new Map(list.map((tt,i)=>[String(tt.id), {t:tt, i}]));
-  list.forEach((tt, i)=>{
-    const deps = parseDepIds(tt.deps);
+  // Draw dependency lines among visible
+  const rowsCount=list.length;
+  const svgHeight=rowsCount*34;
+  svg.setAttribute('width', width);
+  svg.setAttribute('height', svgHeight);
+  svg.setAttribute('viewBox', `0 0 ${width} ${svgHeight}`);
+  Array.from(svg.querySelectorAll('path.dep')).forEach(p=>p.remove());
+
+  const centerY = (i)=>(i*34+17);
+  const barEndX = (tt)=>((tt.startOffset + Math.max(1,tt.duration))*pxPerDay);
+  const barStartX = (tt)=>((tt.startOffset)*pxPerDay);
+  const visibleById = new Map(list.map((tt,i)=>[String(tt.id), {t:tt,i}]));
+
+  list.forEach((tt,i)=>{
+    const deps = String(tt.deps||'').split(/[,\s]+/).map(x=>x.trim()).filter(Boolean);
     deps.forEach(did=>{
-      if(!visibleById.has(did)) return;
-      const from = visibleById.get(did);
-      const x1 = barEndX(from.t);
-      const y1 = centerY(from.i);
-      const x2 = barStartX(tt);
-      const y2 = centerY(i);
-      const midX = (x1 + x2) / 2;
-      const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+      if (!visibleById.has(did)) return;
+      const from=visibleById.get(did);
+      const x1=barEndX(from.t), y1=centerY(from.i);
+      const x2=barStartX(tt), y2=centerY(i);
+      const midX=(x1+x2)/2;
+      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.classList.add('dep');
       p.setAttribute('d', `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`);
       p.setAttribute('fill','none');
       p.setAttribute('stroke','#64748b');
@@ -721,98 +455,377 @@ function render(){
       svg.appendChild(p);
     });
   });
+
+  updateCharts(list); // for current view
 }
 
-// ===== Init =====
-ALL.forEach(t => calcDatesFromOffsets(t));
-applyEdits();
-ALL.forEach(t => calcDatesFromOffsets(t));
-
-// Owner dropdown
-const ownerSel = document.getElementById('ownerFilter');
-function rebuildOwners(){
-  ownerSel.innerHTML='<option value="">כל ה-Owners</option>';
-  Array.from(new Set(ALL.map(t => (t.owner||'').trim()).filter(Boolean))).sort().forEach(o=>{
-    const opt=document.createElement('option'); opt.value=o; opt.textContent=o; ownerSel.appendChild(opt);
+// ===== CSV Export/Import =====
+function exportCSV(){
+  const header = ["id","phase","name","owner","startOffset","duration","start","end","deps","milestone","notes"];
+  const rows = [header.join(",")];
+  const esc = (v)=>{
+    const s=String(v ?? "");
+    if (s.includes('"')||s.includes(",")||s.includes("\n")||s.includes("\r")) return '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  };
+  ALL.forEach(t=>{
+    rows.push([
+      esc(t.id),
+      esc(t.phase),
+      esc(t.name),
+      esc(t.owner),
+      esc(t.startOffset),
+      esc(t.duration),
+      esc(t.start),
+      esc(t.end),
+      esc(t.deps||""),
+      esc(t.milestone?1:0),
+      esc(t.notes||"")
+    ].join(","));
   });
+
+  const bom="\uFEFF";
+  const csvText = bom + rows.join("\r\n");
+  const blob = new Blob([csvText], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url;
+  a.download="gantt_full_export.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+
+  try{ localStorage.setItem(STORE_KEY_CSV, csvText);}catch(_){}
 }
-rebuildOwners();
 
-// Events
-document.getElementById('q').addEventListener('input', render);
-document.getElementById('ownerFilter').addEventListener('change', render);
-document.getElementById('statusFilter').addEventListener('change', render);
-document.getElementById('zoom').addEventListener('change', render);
+function parseCSV(text){
+  // simple RFC4180-ish parser
+  const lines = text.replace(/^\uFEFF/,'').split(/\r\n|\n|\r/);
+  const out = [];
+  let headers = null;
 
-document.getElementById('autoSchedule').addEventListener('click', autoScheduleAll);
-document.getElementById('saveBaseline').addEventListener('click', saveBaseline);
-document.getElementById('exportCsv').addEventListener('click', exportCSV);
+  function splitLine(line){
+    const res=[];
+    let cur="", inQ=false;
+    for (let i=0;i<line.length;i++){
+      const ch=line[i];
+      if (inQ){
+        if (ch === '"'){
+          if (line[i+1] === '"'){ cur+='"'; i++; }
+          else inQ=false;
+        } else cur+=ch;
+      } else {
+        if (ch === '"') inQ=true;
+        else if (ch === ','){ res.push(cur); cur=""; }
+        else cur+=ch;
+      }
+    }
+    res.push(cur);
+    return res;
+  }
 
-document.getElementById('expandAll').addEventListener('click', ()=>{
-  const ui=loadUI();
-  PHASE_GROUPS.forEach(g=>{
-    ui.expandedPhases[g.phase]=true;
-    g.rows.forEach(r=>r.style.display='flex');
-    g.header.querySelector('.title').textContent='▾ '+g.phase;
+  for (let i=0;i<lines.length;i++){
+    const line=lines[i];
+    if (!line.trim()) continue;
+    const cols=splitLine(line);
+    if (!headers){
+      headers = cols.map(h=>h.trim());
+      continue;
+    }
+    const obj={};
+    headers.forEach((h, idx)=> obj[h]= (cols[idx] ?? "").trim());
+    out.push(obj);
+  }
+  return out;
+}
+
+function coerceTask(row){
+  // Accept both Hebrew and English column headers (and common variants)
+  const pick = (...keys) => {
+    for (const k of keys){
+      if (k == null) continue;
+      if (Object.prototype.hasOwnProperty.call(row, k)) {
+        const v = row[k];
+        if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+      }
+    }
+    return undefined;
+  };
+
+  const t = {};
+  // Identity / text fields
+  t.id    = String(pick("id","ID","מזהה") ?? "").trim();
+  t.phase = String(pick("phase","Phase","Phase/Section","קטגוריה/שלב") ?? "").trim();
+  t.name  = String(pick("name","Task","Task Name","שם משימה") ?? "").trim();
+  t.owner = String(pick("owner","Owner","אחראי") ?? "").trim();
+
+  // Dates (optional): if provided, we will keep them
+  const startRaw = pick("start","Start","Start Date","תאריך התחלה");
+  const endRaw   = pick("end","End","End Date","תאריך סיום");
+
+  // Dependencies / notes / milestone
+  t.deps  = String(pick("deps","Dependencies","תלויות") ?? "").trim();
+  t.notes = String(pick("notes","Notes","הערות") ?? "").trim();
+  const msRaw = pick("milestone","Milestone","אבן דרך","אבן_דרך");
+  t.milestone = (String(msRaw ?? "").toLowerCase()==="true" || String(msRaw ?? "").toLowerCase()==="yes" || String(msRaw ?? "")==="1");
+
+  // Scheduling fields
+  const so = pick("startOffset","start_offset","Start Offset (days)","Start Offset","StartOffset","Start Offset (Days)");
+  const du = pick("duration","Duration","Duration (days)","Duration Days","משך (ימים)");
+  t.startOffset = Number(so ?? 0);
+  t.duration = Number(du ?? 1);
+
+  if (startRaw) t.start = String(startRaw).trim();
+  if (endRaw)   t.end   = String(endRaw).trim();
+
+  return t;
+}
+
+async function importCSVFromFile(file){
+  const text = await file.text();
+  const rows = parseCSV(text);
+  const tasks = rows.map(coerceTask).filter(Boolean);
+
+  if (!tasks.length){
+    alert("לא נמצאו משימות ב-CSV. ודא שיש עמודות id/name/phase/owner/startOffset/duration וכו'.");
+    return;
+  }
+
+  // Replace ALL immediately + persist everything
+  ALL = tasks.map(t=>({...t}));
+  const edits = {};
+  ALL.forEach(t=>{
+    edits[t.id] = {
+      id:String(t.id),
+      phase:t.phase||"",
+      name:t.name||"",
+      owner:t.owner||"",
+      startOffset:Number(t.startOffset||0),
+      duration:Number(t.duration||1),
+      deps:t.deps||"",
+      milestone: !!t.milestone,
+      notes: t.notes||"",
+      start:t.start, end:t.end
+    };
   });
-  saveUI(ui);
-});
-document.getElementById('collapseAll').addEventListener('click', ()=>{
-  const ui=loadUI();
-  PHASE_GROUPS.forEach(g=>{
-    ui.expandedPhases[g.phase]=false;
-    g.rows.forEach(r=>r.style.display='none');
-    g.header.querySelector('.title').textContent='▸ '+g.phase;
-  });
-  saveUI(ui);
-});
+  saveEdits(edits);
+  rebuildOwnerOptions(ALL);
+  document.getElementById('ownerFilter').value = "";
+  render();
+  alert(`✅ Import הושלם: נטענו ${ALL.length} משימות והגאנט עודכן מיד.`);
+}
 
-document.getElementById('reset').addEventListener('click', ()=>{
+function resetAll(){
   localStorage.removeItem(STORE_KEY);
-  localStorage.removeItem(UI_KEY);
-  ALL = BASE.map(t => ({...t, status:t.status||"not_started"}));
-  ALL.forEach(t => calcDatesFromOffsets(t));
-  rebuildOwners();
+  localStorage.removeItem(STORE_KEY_CSV);
+  ALL = BASE.map(t=>({...t}));
+  ALL.forEach(t=>calcDatesFromOffsets(t));
+  rebuildOwnerOptions(ALL);
   document.getElementById('q').value='';
   document.getElementById('ownerFilter').value='';
-  document.getElementById('statusFilter').value='';
   document.getElementById('zoom').value='week';
   render();
-});
+}
 
-// Mobile list toggle
-document.getElementById('toggleList').addEventListener('click', ()=>{
-  const left = document.getElementById('left');
-  const ui = loadUI();
-  const show = !(ui.showListMobile);
-  ui.showListMobile = show;
-  saveUI(ui);
-  left.style.display = show ? 'block' : 'none';
-  document.getElementById('rightPane').style.display = show ? 'none' : 'block';
-});
-document.getElementById('today').addEventListener('click', ()=>{
-  const px = pxPerDayForZoom();
-  const d = new Date(); d.setHours(0,0,0,0);
-  const off = daysBetween(MIN_START, d);
-  document.getElementById('rightPane').scrollLeft = Math.max(0, (off*px) - 120);
-});
+// ===== Mini chart engine (no external libs) =====
+function clearCanvas(ctx){
+  ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+}
+function drawBarChart(canvas, items, colorFn, legendEl){
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  clearCanvas(ctx);
 
-// apply mobile UI saved state
-(function initMobile(){
-  const ui = loadUI();
-  if (window.matchMedia && window.matchMedia('(max-width: 980px)').matches) {
-    const left = document.getElementById('left');
-    if (ui.showListMobile) {
-      left.style.display='block';
-      document.getElementById('rightPane').style.display='none';
-    } else {
-      left.style.display='none';
-      document.getElementById('rightPane').style.display='block';
-    }
+  const top = 16, bottom = 26, left = 8, right = 8;
+  const plotW = W - left - right;
+  const plotH = H - top - bottom;
+
+  const maxV = Math.max(1, ...items.map(x=>x.v));
+  const barCount = items.length || 1;
+  const gap = 6;
+  const barW = Math.max(10, Math.floor((plotW - gap*(barCount-1))/barCount));
+
+  // baseline
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = "#e5e7eb";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(left, top+plotH);
+  ctx.lineTo(left+plotW, top+plotH);
+  ctx.stroke();
+
+  items.forEach((it, i)=>{
+    const h = Math.round((it.v/maxV) * (plotH-2));
+    const x = left + i*(barW+gap);
+    const y = top + (plotH - h);
+    ctx.fillStyle = colorFn(it.k, i);
+    ctx.fillRect(x, y, barW, h);
+
+    // value
+    ctx.fillStyle = "#111827";
+    ctx.font = "12px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText(String(it.v), x+barW/2, y-4);
+
+    // label (truncate)
+    const lab = it.k.length > 10 ? (it.k.slice(0,10)+"…") : it.k;
+    ctx.fillStyle = "#374151";
+    ctx.font = "11px system-ui";
+    ctx.fillText(lab, x+barW/2, top+plotH+16);
+  });
+
+  // legend
+  if (legendEl){
+    legendEl.innerHTML = "";
+    items.slice(0,12).forEach((it, i)=>{
+      const div = document.createElement('div');
+      div.className="it";
+      const dot = document.createElement('span');
+      dot.className="dot";
+      dot.style.background = colorFn(it.k, i);
+      const tx = document.createElement('span');
+      tx.textContent = `${it.k}: ${it.v}`;
+      div.appendChild(dot); div.appendChild(tx);
+      legendEl.appendChild(div);
+    });
   }
-})();
+}
 
+function drawKPI(canvas, kpis){
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  clearCanvas(ctx);
+
+  const cols = 2, rows = 2;
+  const pad = 12;
+  const cellW = (W - pad*3)/2;
+  const cellH = (H - pad*3)/2;
+
+  ctx.font="12px system-ui";
+  for (let i=0;i<kpis.length;i++){
+    const r = Math.floor(i/2), c = i%2;
+    const x = pad + c*(cellW+pad);
+    const y = pad + r*(cellH+pad);
+
+    // card
+    ctx.fillStyle="#ffffff";
+    ctx.strokeStyle="#e5e7eb";
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.roundRect(x,y,cellW,cellH,10);
+    ctx.fill();
+    ctx.stroke();
+
+    // title + value
+    ctx.fillStyle="#374151";
+    ctx.font="12px system-ui";
+    ctx.textAlign="right";
+    ctx.fillText(kpis[i].t, x+cellW-10, y+18);
+
+    ctx.fillStyle="#111827";
+    ctx.font="22px system-ui";
+    ctx.textAlign="right";
+    ctx.fillText(String(kpis[i].v), x+cellW-10, y+50);
+
+    ctx.fillStyle="#6b7280";
+    ctx.font="11px system-ui";
+    ctx.textAlign="right";
+    ctx.fillText(kpis[i].s||"", x+cellW-10, y+70);
+  }
+}
+
+// Polyfill roundRect for older browsers
+if (!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+    r = Math.min(r, w/2, h/2);
+    this.beginPath();
+    this.moveTo(x+r,y);
+    this.arcTo(x+w,y,x+w,y+h,r);
+    this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r);
+    this.arcTo(x,y,x+w,y,r);
+    this.closePath();
+    return this;
+  };
+}
+
+function getCounts(list, keyFn){
+  const m = new Map();
+  list.forEach(t=>{
+    const k = keyFn(t);
+    m.set(k, (m.get(k)||0)+1);
+  });
+  return Array.from(m.entries()).map(([k,v])=>({k,v})).sort((a,b)=>b.v-a.v);
+}
+
+function updateCharts(listOverride){
+  const list = listOverride || (()=>{
+    const q=(document.getElementById('q').value||'').toLowerCase().trim();
+    const ownerVal=(document.getElementById('ownerFilter').value||'').toLowerCase();
+    const baseList = !q ? ALL : ALL.filter(t =>
+      (t.name||'').toLowerCase().includes(q) ||
+      (t.owner||'').toLowerCase().includes(q) ||
+      (t.phase||'').toLowerCase().includes(q) ||
+      String(t.id||'').toLowerCase().includes(q)
+    );
+    return !ownerVal ? baseList : baseList.filter(t => (t.owner||'').toLowerCase()===ownerVal);
+  })();
+
+  const cats = getCounts(list, t=>categoryOf(t)).slice(0,10);
+  const owners = getCounts(list, t=>(t.owner||"—")).slice(0,10);
+
+  drawBarChart(
+    document.getElementById('chartCats'),
+    cats,
+    (k)=>colorForCategory(k),
+    document.getElementById('lgCats')
+  );
+
+  // owner colors: stable hash
+  drawBarChart(
+    document.getElementById('chartOwners'),
+    owners,
+    (k)=>{
+      let h=0; for (let i=0;i<k.length;i++) h=(h*31+k.charCodeAt(i))>>>0;
+      const pal=["#2563eb","#16a34a","#f59e0b","#dc2626","#9333ea","#0891b2","#7c3aed","#0ea5e9","#22c55e","#ea580c"];
+      return pal[h%pal.length];
+    },
+    document.getElementById('lgOwners')
+  );
+
+  const milestones = list.filter(t=>!!t.milestone).length;
+  const depsCount = list.reduce((acc,t)=> acc + (String(t.deps||'').split(/[,\s]+/).filter(Boolean).length), 0);
+
+  // date span
+  const offs = list.map(t=>Number(t.startOffset||0));
+  const ends = list.map(t=>Number(t.startOffset||0)+Math.max(1,Number(t.duration||1)));
+  const minO = offs.length ? Math.min(...offs) : 0;
+  const maxE = ends.length ? Math.max(...ends) : 0;
+  const spanDays = Math.max(0, maxE - minO);
+
+  drawKPI(document.getElementById('chartKPIs'), [
+    {t:"כמות משימות", v:list.length, s:"בפילטר הנוכחי"},
+    {t:"Milestones", v:milestones, s:"diamond"},
+    {t:"כמות תלויות", v:depsCount, s:"edges"},
+    {t:"טווח (ימים)", v:spanDays, s:"min..max"}
+  ]);
+}
+
+// ===== Wiring =====
+document.getElementById('q').addEventListener('input', ()=>{ render(); });
+document.getElementById('ownerFilter').addEventListener('change', ()=>{ render(); });
+document.getElementById('zoom').addEventListener('change', ()=>{ render(); });
+document.getElementById('exportCsv').addEventListener('click', exportCSV);
+document.getElementById('reset').addEventListener('click', resetAll);
+
+document.getElementById('importBtn').addEventListener('click', async ()=>{
+  const f = document.getElementById('importFile').files?.[0];
+  if (!f){ alert("בחר קובץ CSV קודם."); return; }
+  await importCSVFromFile(f);
+});
+
+// initial
 render();
+updateCharts();
 </script>
 </body>
 </html>
