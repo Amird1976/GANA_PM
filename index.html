@@ -3,31 +3,73 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Gantt – Ghana Energy CERT (Drag & Drop) + Import/Export + GitHub Sync + Charts</title>
+<title>Gantt – Ghana Energy CERT (Drag & Drop) + Import/Export + Charts</title>
 <style>
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#f6f7fb;color:#111827}
+  /* ===== Version 17 ===== */
+  body{
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    margin:0;
+    background:#f6f7fb;
+    color:#111827;
+    overflow:auto;
+  }
+
+  /* Force scrollbars to appear (where supported) */
+  *{ scrollbar-gutter: stable both-edges; }
+  /* WebKit */
+  ::-webkit-scrollbar{ width:12px; height:12px; }
+  ::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:999px; border:3px solid #f6f7fb; }
+  ::-webkit-scrollbar-track{ background:#f6f7fb; }
+
   header{padding:16px 20px;background:#111827;color:#fff}
   header h1{margin:0;font-size:18px;font-weight:900;direction:rtl;text-align:right}
   header .meta{margin-top:6px;font-size:13px;opacity:.9;direction:rtl;text-align:right;line-height:1.35}
-  .wrap{padding:16px 20px}
+
+  .wrap{
+    padding:16px 20px;
+    overflow:auto; /* page area can scroll too */
+  }
+
   .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
   .controls input,.controls select,.controls button{padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;background:#fff;font-size:14px}
   .controls button{cursor:pointer}
   .controls .btn-primary{background:#111827;color:#fff;border-color:#111827}
   .controls .btn-ghost{background:#fff;color:#111827}
-  .controls .btn-warn{background:#fff7ed;color:#9a3412;border-color:#fed7aa}
+
   .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
-  .grid{display:grid;grid-template-columns: 540px 1fr;}
-  .left{border-right:1px solid #e5e7eb}
-  .right{overflow:auto}
+
+  /* Grid with fixed working height => scrollbars inside panes */
+  .grid{
+    display:grid;
+    grid-template-columns: 540px 1fr;
+  }
+
+  /* Main scroll area height (adjustable) */
+  .workArea{
+    height: min(62vh, 680px); /* gives internal scrollbars */
+  }
+
+  .left{
+    border-right:1px solid #e5e7eb;
+    overflow:auto;           /* scrollbar */
+    height:100%;
+  }
+
+  .right{
+    overflow:auto;           /* vertical + horizontal scrollbars */
+    height:100%;
+  }
+
   .row{display:flex;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid #f1f5f9}
   .row:nth-child(odd){background:#fafafa}
   .row .title{flex:1;direction:rtl;text-align:right;font-size:13px;line-height:1.2}
   .row .meta{font-size:12px;color:#374151;white-space:nowrap}
+
   .timeline{position:relative;min-height: 40px;border-bottom:1px solid #e5e7eb;background:#fff}
   .ticks{display:flex;position:sticky;top:0;background:#fff;z-index:2}
   .tick{border-right:1px solid #eef2f7;padding:8px 6px;font-size:12px;color:#374151;white-space:nowrap}
-  .bar-area{position:relative}
+
+  .bar-area{position:relative; overflow:visible;}
   .bar-row{position:relative;height:34px;border-bottom:1px solid #f1f5f9}
   .bar{position:absolute;top:7px;height:20px;border-radius:10px;background:#2563eb;cursor:grab;box-shadow:0 1px 1px rgba(0,0,0,.08)}
   .bar.dragging{cursor:grabbing;opacity:.9}
@@ -38,6 +80,7 @@
   .bar:hover .handle{opacity:.35;}
   .handle.left{left:0;border-top-left-radius:10px;border-bottom-left-radius:10px;background:#0b3ea8;cursor:ew-resize}
   .handle.right{right:0;border-top-right-radius:10px;border-bottom-right-radius:10px;background:#0b3ea8;cursor:ew-resize}
+
   .hint{padding:10px 12px;font-size:12px;color:#374151;direction:rtl;text-align:right}
   .pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-size:12px}
 
@@ -47,7 +90,12 @@
 
   /* Charts */
   .dash{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:12px;margin:12px 0}
-  @media (max-width: 980px){ .dash{grid-template-columns:1fr} .grid{grid-template-columns:1fr} .left{border-right:none;border-bottom:1px solid #e5e7eb}}
+  @media (max-width: 980px){
+    .dash{grid-template-columns:1fr}
+    .grid{grid-template-columns:1fr}
+    .left{border-right:none;border-bottom:1px solid #e5e7eb}
+    .workArea{height: min(70vh, 760px);}
+  }
   .chart-card{padding:12px}
   .chart-title{font-weight:900;font-size:13px;margin:0 0 8px 0;direction:rtl;text-align:right}
   canvas{width:100%;height:160px;display:block}
@@ -56,32 +104,14 @@
   .chart-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
   .importBox{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .importBox input[type=file]{padding:8px 10px}
-
-  /* Modal */
-  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:999}
-  .modal{width:min(720px,92vw);background:#fff;border-radius:16px;border:1px solid #e5e7eb;box-shadow:0 18px 60px rgba(0,0,0,.25);overflow:hidden}
-  .modal header{background:#111827;color:#fff;padding:14px 16px}
-  .modal header h2{margin:0;font-size:14px;font-weight:900;direction:rtl;text-align:right}
-  .modal .body{padding:14px 16px;display:grid;gap:10px}
-  .modal .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  @media(max-width:720px){.modal .row2{grid-template-columns:1fr}}
-  .modal label{font-size:12px;color:#374151;direction:rtl;text-align:right;display:block;margin-bottom:4px}
-  .modal input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;font-size:14px}
-  .modal .footer{display:flex;gap:10px;justify-content:flex-end;padding:12px 16px;border-top:1px solid #eef2f7;background:#fafafa}
-  .smallnote{font-size:12px;color:#6b7280;direction:rtl;text-align:right;line-height:1.4}
-  .log{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;max-height:140px;overflow:auto;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-size:12px}
-  .log .ok{color:#065f46}
-  .log .err{color:#991b1b}
-  .log .info{color:#1f2937}
 </style>
 </head>
 <body>
 <header>
-  <h1>AMIR DAVIDI TECHNOLOGIES – גאנט פרויקט Ghana Energy CERT (Drag & Drop) <span class="pill">Version 16</span></h1>
+  <h1>AMIR DAVIDI TECHNOLOGIES – גאנט פרויקט Ghana Energy CERT (Drag & Drop) <span class="pill">Version 17</span></h1>
   <div class="meta">
     ✅ גרירה מזיזה משימה | ✅ גרירת קצוות משנה Duration | ✅ חצים לתלויות<br/>
-    ✅ Export CSV (כולל כל שדות היצירה) | ✅ Import CSV משנה מיד את כל הנתונים | ✅ נשמר מקומית בדפדפן<br/>
-    ✅ Load/Save ל-GitHub (API) עם Token + Settings
+    ✅ Export CSV (כולל כל שדות היצירה) | ✅ Import CSV משנה מיד את כל הנתונים | ✅ נשמר מקומית בדפדפן
     <span class="pill">UTF-8 BOM לאקסל (עברית תקינה)</span>
   </div>
 </header>
@@ -106,7 +136,6 @@
     </div>
 
     <button id="reset">איפוס</button>
-    <button id="openSettings" class="btn-warn" title="הגדרות GitHub + Token">Settings (GitHub)</button>
   </div>
 
   <div class="dash">
@@ -127,20 +156,11 @@
         KPI: כמות משימות · כמות Milestones · כמות תלויות · טווח תאריכים (ימים)
       </div>
     </div>
-
-    <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px dashed #cbd5e1;border-radius:10px;background:#fff;cursor:pointer">
-      <span style="font-size:13px">ייבוא CSV</span>
-      <input type="file" id="importCsvFile" accept=".csv,text/csv" style="display:none"/>
-    </label>
-
-    <button id="loadRepo" title="טען tasks.csv מה-GitHub דרך API">Load from GIT (tasks.csv)</button>
-    <button id="saveRepo" title="שמור tasks.csv ל-GitHub דרך API">Save to GIT (tasks.csv)</button>
-    <button id="downloadTemplate" title="הורד תבנית CSV מלאה לייבוא">Download CSV Template</button>
-    <button id="clearLocal" title="מוחק שינויים מקומיים ומחזיר לטעינה מה-GIT">Clear Local Cache</button>
   </div>
 
   <div class="card">
-    <div class="grid">
+    <!-- internal scroll panes -->
+    <div class="grid workArea">
       <div class="left" id="left"></div>
       <div class="right">
         <div class="timeline" id="timeline"></div>
@@ -151,74 +171,13 @@
       טיפ: לדיוק גבוה העבר ל-Zoom "יום". דאבל-קליק על בר מציג פרטים. לאחר Import/Drag אפשר Export CSV ולהדביק חזרה לאקסל.
     </div>
   </div>
-
-  <div class="log" id="log"></div>
-</div>
-
-<!-- Settings Modal -->
-<div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true">
-    <header>
-      <h2>הגדרות GitHub (Token + Repo)</h2>
-    </header>
-    <div class="body">
-      <div class="smallnote">
-        ⚠️ שמירת Token ב-localStorage היא נוחה אבל פחות מאובטחת. מומלץ Token עם הרשאות מינימליות (רק ל-Repo הזה).
-      </div>
-
-      <div>
-        <label>GitHub Token (Classic: repo / Fine-grained: Contents RW)</label>
-        <input id="ghToken" placeholder="ghp_... / github_pat_..." autocomplete="off"/>
-      </div>
-
-      <div class="row2">
-        <div>
-          <label>Repo Owner</label>
-          <input id="ghOwner" placeholder="amird1976"/>
-        </div>
-        <div>
-          <label>Repo Name</label>
-          <input id="ghRepo" placeholder="GANA_PM"/>
-        </div>
-      </div>
-
-      <div class="row2">
-        <div>
-          <label>Branch</label>
-          <input id="ghBranch" placeholder="main"/>
-        </div>
-        <div>
-          <label>File Path (ב-Repo)</label>
-          <input id="ghPath" placeholder="tasks.csv"/>
-        </div>
-      </div>
-
-      <div class="smallnote">
-        טיפ: אם האתר הוא GitHub Pages של אותו repo, ברוב המקרים זה: Owner/Repo = כמו ה-URL, Branch=main, Path=tasks.csv.
-      </div>
-    </div>
-    <div class="footer">
-      <button class="btn-ghost" id="closeSettingsBtn">סגור</button>
-      <button class="btn-primary" id="saveSettingsBtn">שמור הגדרות</button>
-      <button class="btn-warn" id="clearTokenBtn" title="מוחק Token בלבד">מחק Token</button>
-    </div>
-  </div>
 </div>
 
 <script>
-/* =========================
-   Version 16 – GitHub Sync
-   ========================= */
-
 const MS_DAY = 86400000;
 const MIN_START = new Date("2026-01-05");
 const MAX_END = new Date("2026-06-10");
 
-/*
-  IMPORTANT:
-  אם אין tasks.csv ב-Git, זה יעלה את BASE.
-  אם יש tasks.csv ב-Git ואין Local Cache, זה יטען אותו אוטומטית.
-*/
 const BASE = [
   {"id":"1","phase":"1. Management","name":"פתיחת פרויקט וניהול (Phase 1)","owner":"צוות יעוץ","start":"2026-01-05","end":"2026-02-04","startOffset":0,"duration":30,"deps":"","milestone":false,"notes":""},
   {"id":"2","phase":"1.1 Admin","name":"פגישת קיק-אוף והתנעת צוות היגוי","owner":"צוות יעוץ","start":"2026-01-05","end":"2026-01-07","startOffset":0,"duration":2,"deps":"","milestone":true,"notes":"דוגמה: סמן milestone=true כדי לקבל יהלום"},
@@ -227,186 +186,9 @@ const BASE = [
 ];
 
 let ALL = BASE.map(t => ({...t}));
+const STORE_KEY = "gantt_tasks_v17_edits";
+const STORE_KEY_CSV = "gantt_tasks_v17_csv_snapshot";
 
-/* ===== LocalStorage Keys (v16) ===== */
-const STORE_KEY = "gantt_tasks_v16_edits";
-const STORE_KEY_CSV = "gantt_tasks_v16_csv_snapshot";
-const GH_CFG_KEY = "gantt_github_cfg_v16";
-const GH_SHA_KEY = "gantt_github_last_sha_v16"; // stores sha of last loaded file
-
-/* ===== Logger ===== */
-const logEl = document.getElementById('log');
-function logLine(msg, cls="info"){
-  const t = new Date();
-  const ts = String(t.toTimeString()).slice(0,8);
-  const div = document.createElement('div');
-  div.className = cls;
-  div.textContent = `[${ts}] ${msg}`;
-  logEl.appendChild(div);
-  logEl.scrollTop = logEl.scrollHeight;
-}
-function logOk(m){ logLine(m,"ok"); }
-function logErr(m){ logLine(m,"err"); }
-function logInfo(m){ logLine(m,"info"); }
-
-/* ===== GitHub Config ===== */
-function defaultGitCfg(){
-  // Best-effort infer owner/repo from URL:
-  // https://OWNER.github.io/REPO/  => owner=OWNER, repo=REPO
-  let owner="amird1976", repo="GANA_PM", branch="main", path="tasks.csv", token="";
-  try{
-    const host = location.hostname.toLowerCase();
-    const parts = location.pathname.split('/').filter(Boolean);
-    if (host.endsWith("github.io")){
-      const inferredOwner = host.split(".github.io")[0];
-      if (inferredOwner) owner = inferredOwner;
-      if (parts[0]) repo = parts[0];
-    }
-  }catch(_){}
-  return { owner, repo, branch, path, token };
-}
-function loadGitCfg(){
-  try{
-    const raw = localStorage.getItem(GH_CFG_KEY);
-    if (!raw) return defaultGitCfg();
-    const o = JSON.parse(raw);
-    return {
-      owner: o.owner || defaultGitCfg().owner,
-      repo: o.repo || defaultGitCfg().repo,
-      branch: o.branch || defaultGitCfg().branch,
-      path: o.path || defaultGitCfg().path,
-      token: o.token || ""
-    };
-  }catch(e){
-    return defaultGitCfg();
-  }
-}
-function saveGitCfg(cfg){
-  try{ localStorage.setItem(GH_CFG_KEY, JSON.stringify(cfg)); }catch(_){}
-}
-
-/* ===== GitHub API Helpers ===== */
-function b64ToUtf8(b64){
-  // GitHub returns base64 with line breaks sometimes
-  const clean = (b64||"").replace(/\s/g,'');
-  const binStr = atob(clean);
-  const bytes = new Uint8Array(binStr.length);
-  for (let i=0;i<binStr.length;i++) bytes[i] = binStr.charCodeAt(i);
-  return new TextDecoder("utf-8").decode(bytes);
-}
-function utf8ToB64(str){
-  const bytes = new TextEncoder().encode(str);
-  let bin = "";
-  for (let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
-}
-function ghHeaders(token){
-  const h = {
-    "Accept": "application/vnd.github+json"
-  };
-  if (token && token.trim()){
-    h["Authorization"] = "Bearer " + token.trim();
-  }
-  return h;
-}
-function ghUrl(cfg){
-  // Contents API
-  const encPath = cfg.path.split('/').map(encodeURIComponent).join('/');
-  return `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${encPath}?ref=${encodeURIComponent(cfg.branch)}`;
-}
-
-async function ghLoadCsv(){
-  const cfg = loadGitCfg();
-  logInfo(`Load from GitHub: ${cfg.owner}/${cfg.repo}@${cfg.branch} → ${cfg.path}`);
-  const url = ghUrl(cfg);
-
-  const res = await fetch(url, { headers: ghHeaders(cfg.token) });
-  const text = await res.text();
-  if (!res.ok){
-    // show body for debugging (but not too verbose)
-    logErr(`GitHub load failed: HTTP ${res.status} ${res.statusText}`);
-    try{ logErr(`Body: ${text.slice(0,260)}`); }catch(_){}
-    throw new Error(`GitHub load failed (${res.status})`);
-  }
-
-  const js = JSON.parse(text);
-  if (!js || !js.content){
-    logErr("GitHub response missing content.");
-    throw new Error("Missing content from GitHub API");
-  }
-
-  const csv = b64ToUtf8(js.content);
-  const sha = js.sha || "";
-  if (sha){
-    try{ localStorage.setItem(GH_SHA_KEY, sha); }catch(_){}
-    logOk(`Loaded tasks.csv (sha=${sha.slice(0,10)}...)`);
-  } else {
-    logOk("Loaded tasks.csv (sha missing?)");
-  }
-  return { csv, sha };
-}
-
-async function ghSaveCsv(csvText){
-  const cfg = loadGitCfg();
-  if (!cfg.token || !cfg.token.trim()){
-    alert("אין Token בהגדרות. לחץ Settings והזן GitHub Token (עם הרשאות כתיבה ל-contents).");
-    throw new Error("Missing token");
-  }
-  logInfo(`Save to GitHub: ${cfg.owner}/${cfg.repo}@${cfg.branch} → ${cfg.path}`);
-
-  // Need sha of existing file (if exists). Use last sha if available, else try to fetch.
-  let sha = "";
-  try{ sha = localStorage.getItem(GH_SHA_KEY) || ""; }catch(_){}
-  if (!sha){
-    try{
-      const loaded = await ghLoadCsv();
-      sha = loaded.sha || "";
-    }catch(e){
-      // If file doesn't exist, we can create without sha (but repo must allow)
-      logInfo("No existing sha found (file may not exist). Will try create new file.");
-      sha = "";
-    }
-  }
-
-  const urlBase = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${cfg.path.split('/').map(encodeURIComponent).join('/')}`;
-  const url = `${urlBase}`; // PUT uses this URL without ?ref
-
-  const payload = {
-    message: `Update tasks.csv from Gantt UI (v16) - ${new Date().toISOString()}`,
-    content: utf8ToB64(csvText),
-    branch: cfg.branch
-  };
-  if (sha) payload.sha = sha;
-
-  const res = await fetch(url, {
-    method: "PUT",
-    headers: {
-      ...ghHeaders(cfg.token),
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const bodyText = await res.text();
-  if (!res.ok){
-    logErr(`GitHub save failed: HTTP ${res.status} ${res.statusText}`);
-    try{ logErr(`Body: ${bodyText.slice(0,260)}`); }catch(_){}
-    throw new Error(`GitHub save failed (${res.status})`);
-  }
-
-  const js = JSON.parse(bodyText);
-  const newSha = js?.content?.sha || js?.commit?.sha || "";
-  if (js?.content?.sha){
-    try{ localStorage.setItem(GH_SHA_KEY, js.content.sha); }catch(_){}
-    logOk(`Saved successfully (new sha=${js.content.sha.slice(0,10)}...)`);
-  } else {
-    logOk("Saved successfully (sha not returned clearly).");
-  }
-
-  return newSha;
-}
-
-/* ===== Category coloring ===== */
 function categoryOf(t){
   const p = (t.phase||"").trim();
   if (!p) return "Other";
@@ -447,7 +229,7 @@ function calcDatesFromOffsets(t){
   t.start = fmt(s); t.end = fmt(e);
 }
 
-/* ===== Apply local edits (if exist) ===== */
+// Apply local edits
 (function applyLocal(){
   const edits = loadEdits(); if (!edits) return;
   ALL = ALL.map(t => {
@@ -457,7 +239,7 @@ function calcDatesFromOffsets(t){
 })();
 ALL.forEach(t => calcDatesFromOffsets(t));
 
-/* ===== Owner filter init ===== */
+// Owner filter init
 const ownerSel = document.getElementById('ownerFilter');
 function rebuildOwnerOptions(tasks){
   ownerSel.innerHTML = '<option value="">כל ה-Owners</option>';
@@ -467,7 +249,7 @@ function rebuildOwnerOptions(tasks){
 }
 rebuildOwnerOptions(ALL);
 
-/* ===== Zoom ===== */
+// Zoom
 function pxPerDayForZoom(){ const z=document.getElementById('zoom').value; return (z==='day')?18:(z==='week'?7:2.5); }
 function buildTicks(pxPerDay){
   const tl=document.getElementById('timeline'); tl.innerHTML='';
@@ -505,7 +287,7 @@ function persistOne(t){
 }
 function findTask(id){ return ALL.find(x=>String(x.id)===String(id)); }
 
-/* ===== Drag ===== */
+// Drag
 function attachDrag(barEl, pxPerDay){
   let mode="move", startX=0, origOffset=0, origDuration=0;
 
@@ -557,7 +339,7 @@ function attachDrag(barEl, pxPerDay){
   barEl.addEventListener('pointercancel', onPointerUp);
 }
 
-/* ===== Milestone shape ===== */
+// Milestone shape
 function applyMilestoneStyle(barEl, isMilestone){
   if (!isMilestone) {
     barEl.style.borderRadius = "10px";
@@ -568,7 +350,7 @@ function applyMilestoneStyle(barEl, isMilestone){
   barEl.style.transform = "rotate(45deg)";
 }
 
-/* ===== Render ===== */
+// Render
 function render(){
   const q=(document.getElementById('q').value||'').toLowerCase().trim();
   const ownerVal=(document.getElementById('ownerFilter').value||'').toLowerCase();
@@ -603,7 +385,7 @@ function render(){
   left.appendChild(h);
   list.forEach(t=>{
     const r=document.createElement('div'); r.className='row';
-    r.innerHTML = `<div class="meta">#${t.id}</div><div class="title">${escapeHtml(t.name)}</div><div class="meta">${escapeHtml(t.owner||'')}</div>`;
+    r.innerHTML = `<div class="meta">#${t.id}</div><div class="title">${t.name}</div><div class="meta">${t.owner||''}</div>`;
     left.appendChild(r);
   });
 
@@ -637,13 +419,12 @@ function render(){
 
     const isMs = !!t.milestone;
     const durPx = Math.max(1,t.duration)*pxPerDay;
-    const msSize = Math.max(10, Math.min(18, pxPerDay*2.2)); // diamond size
+    const msSize = Math.max(10, Math.min(18, pxPerDay*2.2));
     bar.style.left=(t.startOffset*pxPerDay)+'px';
     bar.style.width = isMs ? (msSize+'px') : (durPx+'px');
 
     const cat=categoryOf(t);
-    const col=colorForCategory(cat);
-    bar.style.background=col;
+    bar.style.background=colorForCategory(cat);
 
     bar.title=`${t.name} (Start: ${t.start}, End: ${t.end})`;
     applyMilestoneStyle(bar, isMs);
@@ -675,7 +456,7 @@ function render(){
     bars.appendChild(row);
   });
 
-  // Draw dependency lines among visible
+  // Draw dependency lines
   const rowsCount=list.length;
   const svgHeight=rowsCount*34;
   svg.setAttribute('width', width);
@@ -710,8 +491,8 @@ function render(){
   updateCharts(list);
 }
 
-/* ===== CSV Export/Import ===== */
-function exportCSVText(){
+// CSV Export/Import
+function exportCSV(){
   const header = ["id","phase","name","owner","startOffset","duration","start","end","deps","milestone","notes"];
   const rows = [header.join(",")];
   const esc = (v)=>{
@@ -721,28 +502,14 @@ function exportCSVText(){
   };
   ALL.forEach(t=>{
     rows.push([
-      esc(t.id),
-      esc(t.phase),
-      esc(t.name),
-      esc(t.owner),
-      esc(t.startOffset),
-      esc(t.duration),
-      esc(t.start),
-      esc(t.end),
-      esc(t.deps||""),
-      esc(t.milestone?1:0),
-      esc(t.notes||"")
+      esc(t.id), esc(t.phase), esc(t.name), esc(t.owner),
+      esc(t.startOffset), esc(t.duration), esc(t.start), esc(t.end),
+      esc(t.deps||""), esc(t.milestone?1:0), esc(t.notes||"")
     ].join(","));
   });
 
   const bom="\uFEFF";
   const csvText = bom + rows.join("\r\n");
-  try{ localStorage.setItem(STORE_KEY_CSV, csvText);}catch(_){}
-  return csvText;
-}
-
-function exportCSV(){
-  const csvText = exportCSVText();
   const blob = new Blob([csvText], {type:"text/csv;charset=utf-8"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -750,7 +517,7 @@ function exportCSV(){
   a.download="gantt_full_export.csv";
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 5000);
-  logOk(`Export CSV: ${ALL.length} tasks`);
+  try{ localStorage.setItem(STORE_KEY_CSV, csvText);}catch(_){}
 }
 
 function parseCSV(text){
@@ -821,17 +588,17 @@ function coerceTask(row){
   t.startOffset = Number(so ?? 0);
   t.duration = Number(du ?? 1);
 
-  // dates optional; we recompute from offsets anyway
   return t;
 }
 
-async function importCSVText(text){
+async function importCSVFromFile(file){
+  const text = await file.text();
   const rows = parseCSV(text);
   const tasks = rows.map(coerceTask).filter(Boolean).filter(t=>t.id);
 
   if (!tasks.length){
     alert("לא נמצאו משימות ב-CSV. ודא שיש עמודות id/name/phase/owner/startOffset/duration וכו'.");
-    return false;
+    return;
   }
 
   ALL = tasks.map(t=>({...t}));
@@ -856,17 +623,9 @@ async function importCSVText(text){
   rebuildOwnerOptions(ALL);
   document.getElementById('ownerFilter').value = "";
   render();
-  logOk(`Import: loaded ${ALL.length} tasks`);
-  return true;
+  alert(`✅ Import הושלם: נטענו ${ALL.length} משימות והגאנט עודכן מיד.`);
 }
 
-async function importCSVFromFile(file){
-  const text = await file.text();
-  const ok = await importCSVText(text);
-  if (ok) alert(`✅ Import הושלם: נטענו ${ALL.length} משימות והגאנט עודכן מיד.`);
-}
-
-/* ===== Reset/Clear ===== */
 function resetAll(){
   localStorage.removeItem(STORE_KEY);
   localStorage.removeItem(STORE_KEY_CSV);
@@ -877,17 +636,11 @@ function resetAll(){
   document.getElementById('ownerFilter').value='';
   document.getElementById('zoom').value='week';
   render();
-  logInfo("Reset: back to BASE");
-}
-function clearLocalCache(){
-  localStorage.removeItem(STORE_KEY);
-  localStorage.removeItem(STORE_KEY_CSV);
-  // do not remove github settings
-  logInfo("Cleared local cache. Now load from Git if available.");
 }
 
-/* ===== Mini chart engine (no external libs) ===== */
+// Charts (same engine)
 function clearCanvas(ctx){ ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height); }
+
 function drawBarChart(canvas, items, colorFn, legendEl){
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
@@ -902,7 +655,6 @@ function drawBarChart(canvas, items, colorFn, legendEl){
   const gap = 6;
   const barW = Math.max(10, Math.floor((plotW - gap*(barCount-1))/barCount));
 
-  ctx.globalAlpha = 1;
   ctx.strokeStyle = "#e5e7eb";
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -943,6 +695,7 @@ function drawBarChart(canvas, items, colorFn, legendEl){
     });
   }
 }
+
 function drawKPI(canvas, kpis){
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
@@ -952,7 +705,20 @@ function drawKPI(canvas, kpis){
   const cellW = (W - pad*3)/2;
   const cellH = (H - pad*3)/2;
 
-  ctx.font="12px system-ui";
+  if (!CanvasRenderingContext2D.prototype.roundRect){
+    CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+      r = Math.min(r, w/2, h/2);
+      this.beginPath();
+      this.moveTo(x+r,y);
+      this.arcTo(x+w,y,x+w,y+h,r);
+      this.arcTo(x+w,y+h,x,y+h,r);
+      this.arcTo(x,y+h,x,y,r);
+      this.arcTo(x,y,x+w,y,r);
+      this.closePath();
+      return this;
+    };
+  }
+
   for (let i=0;i<kpis.length;i++){
     const r = Math.floor(i/2), c = i%2;
     const x = pad + c*(cellW+pad);
@@ -982,19 +748,7 @@ function drawKPI(canvas, kpis){
     ctx.fillText(kpis[i].s||"", x+cellW-10, y+70);
   }
 }
-if (!CanvasRenderingContext2D.prototype.roundRect){
-  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
-    r = Math.min(r, w/2, h/2);
-    this.beginPath();
-    this.moveTo(x+r,y);
-    this.arcTo(x+w,y,x+w,y+h,r);
-    this.arcTo(x+w,y+h,x,y+h,r);
-    this.arcTo(x,y+h,x,y,r);
-    this.arcTo(x,y,x+w,y,r);
-    this.closePath();
-    return this;
-  };
-}
+
 function getCounts(list, keyFn){
   const m = new Map();
   list.forEach(t=>{
@@ -1003,6 +757,7 @@ function getCounts(list, keyFn){
   });
   return Array.from(m.entries()).map(([k,v])=>({k,v})).sort((a,b)=>b.v-a.v);
 }
+
 function updateCharts(listOverride){
   const list = listOverride || (()=>{
     const q=(document.getElementById('q').value||'').toLowerCase().trim();
@@ -1019,23 +774,12 @@ function updateCharts(listOverride){
   const cats = getCounts(list, t=>categoryOf(t)).slice(0,10);
   const owners = getCounts(list, t=>(t.owner||"—")).slice(0,10);
 
-  drawBarChart(
-    document.getElementById('chartCats'),
-    cats,
-    (k)=>colorForCategory(k),
-    document.getElementById('lgCats')
-  );
-
-  drawBarChart(
-    document.getElementById('chartOwners'),
-    owners,
-    (k)=>{
-      let h=0; for (let i=0;i<k.length;i++) h=(h*31+k.charCodeAt(i))>>>0;
-      const pal=["#2563eb","#16a34a","#f59e0b","#dc2626","#9333ea","#0891b2","#7c3aed","#0ea5e9","#22c55e","#ea580c"];
-      return pal[h%pal.length];
-    },
-    document.getElementById('lgOwners')
-  );
+  drawBarChart(document.getElementById('chartCats'), cats, (k)=>colorForCategory(k), document.getElementById('lgCats'));
+  drawBarChart(document.getElementById('chartOwners'), owners, (k)=>{
+    let h=0; for (let i=0;i<k.length;i++) h=(h*31+k.charCodeAt(i))>>>0;
+    const pal=["#2563eb","#16a34a","#f59e0b","#dc2626","#9333ea","#0891b2","#7c3aed","#0ea5e9","#22c55e","#ea580c"];
+    return pal[h%pal.length];
+  }, document.getElementById('lgOwners'));
 
   const milestones = list.filter(t=>!!t.milestone).length;
   const depsCount = list.reduce((acc,t)=> acc + (String(t.deps||'').split(/[,\s]+/).filter(Boolean).length), 0);
@@ -1054,31 +798,7 @@ function updateCharts(listOverride){
   ]);
 }
 
-/* ===== Utilities ===== */
-function escapeHtml(s){
-  const str = String(s ?? "");
-  return str
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#39;");
-}
-
-/* ===== Template Download ===== */
-function downloadTemplate(){
-  const temp = exportCSVText();
-  const blob = new Blob([temp], {type:"text/csv;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href=url;
-  a.download="tasks_template_full.csv";
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url), 5000);
-  logOk("Downloaded CSV template");
-}
-
-/* ===== Wiring ===== */
+// Wiring
 document.getElementById('q').addEventListener('input', ()=>{ render(); });
 document.getElementById('ownerFilter').addEventListener('change', ()=>{ render(); });
 document.getElementById('zoom').addEventListener('change', ()=>{ render(); });
@@ -1090,115 +810,10 @@ document.getElementById('importBtn').addEventListener('click', async ()=>{
   if (!f){ alert("בחר קובץ CSV קודם."); return; }
   await importCSVFromFile(f);
 });
-document.getElementById('importCsvFile').addEventListener('change', async (e)=>{
-  const f = e.target.files?.[0];
-  if (!f) return;
-  await importCSVFromFile(f);
-  e.target.value = ""; // allow re-upload same file
-});
 
-document.getElementById('downloadTemplate').addEventListener('click', downloadTemplate);
-
-document.getElementById('clearLocal').addEventListener('click', ()=>{
-  clearLocalCache();
-  alert("✅ נמחק cache מקומי. עכשיו לחץ 'Load from GIT' כדי לטעון מה-Repo.");
-});
-
-document.getElementById('loadRepo').addEventListener('click', async ()=>{
-  try{
-    const { csv } = await ghLoadCsv();
-    const ok = await importCSVText(csv);
-    if (ok) alert("✅ נטען tasks.csv מה-Git והגאנט עודכן.");
-  }catch(e){
-    alert("❌ טעינה מה-Git נכשלה. פתח Log למטה כדי לראות למה (וגם בדוק Settings/Token/Repo/Path).");
-  }
-});
-
-document.getElementById('saveRepo').addEventListener('click', async ()=>{
-  try{
-    const csvText = exportCSVText();
-    await ghSaveCsv(csvText);
-    alert("✅ נשמר tasks.csv ל-GitHub בהצלחה.");
-  }catch(e){
-    alert("❌ שמירה ל-Git נכשלה. בדוק Log למטה + בדוק שה-Token עם הרשאות כתיבה ל-Repo.");
-  }
-});
-
-/* ===== Settings Modal ===== */
-const modalBackdrop = document.getElementById('modalBackdrop');
-const openSettingsBtn = document.getElementById('openSettings');
-const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-const clearTokenBtn = document.getElementById('clearTokenBtn');
-
-function openModal(){
-  const cfg = loadGitCfg();
-  document.getElementById('ghToken').value = cfg.token || "";
-  document.getElementById('ghOwner').value = cfg.owner || "";
-  document.getElementById('ghRepo').value = cfg.repo || "";
-  document.getElementById('ghBranch').value = cfg.branch || "";
-  document.getElementById('ghPath').value = cfg.path || "";
-  modalBackdrop.style.display="flex";
-  modalBackdrop.setAttribute("aria-hidden","false");
-}
-function closeModal(){
-  modalBackdrop.style.display="none";
-  modalBackdrop.setAttribute("aria-hidden","true");
-}
-openSettingsBtn.addEventListener('click', openModal);
-closeSettingsBtn.addEventListener('click', closeModal);
-modalBackdrop.addEventListener('click', (e)=>{ if (e.target === modalBackdrop) closeModal(); });
-
-saveSettingsBtn.addEventListener('click', ()=>{
-  const cfg = {
-    token: document.getElementById('ghToken').value.trim(),
-    owner: document.getElementById('ghOwner').value.trim(),
-    repo: document.getElementById('ghRepo').value.trim(),
-    branch: document.getElementById('ghBranch').value.trim() || "main",
-    path: document.getElementById('ghPath').value.trim() || "tasks.csv"
-  };
-  if (!cfg.owner || !cfg.repo){
-    alert("חייב למלא לפחות Owner ו-Repo.");
-    return;
-  }
-  saveGitCfg(cfg);
-  logOk(`Settings saved: ${cfg.owner}/${cfg.repo}@${cfg.branch} path=${cfg.path} token=${cfg.token? "YES":"NO"}`);
-  closeModal();
-  alert("✅ נשמרו הגדרות GitHub.");
-});
-
-clearTokenBtn.addEventListener('click', ()=>{
-  const cfg = loadGitCfg();
-  cfg.token = "";
-  saveGitCfg(cfg);
-  document.getElementById('ghToken').value = "";
-  logInfo("Token cleared from settings.");
-  alert("✅ Token נמחק (שאר ההגדרות נשמרו).");
-});
-
-/* ===== Auto-load from Git if no local edits ===== */
-async function bootAutoLoad(){
-  const localEdits = loadEdits();
-  if (localEdits && Object.keys(localEdits).length){
-    logInfo("Local cache detected → using local edits (not auto-loading from Git).");
-    return;
-  }
-  // try load from Git
-  try{
-    const { csv } = await ghLoadCsv();
-    const ok = await importCSVText(csv);
-    if (ok){
-      logOk("Auto-loaded from Git (because no local cache).");
-    }
-  }catch(e){
-    logInfo("Auto-load from Git skipped/failed → using BASE.");
-  }
-}
-
-/* ===== Initial render ===== */
+// initial
 render();
 updateCharts();
-bootAutoLoad();
 </script>
 </body>
 </html>
