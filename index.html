@@ -1850,7 +1850,7 @@ async function loadFromGitHub() {
         
         // פענוח תוכן (UTF-8 בטוח לעברית)
         const base64Content = data.content.replace(/\s/g, '');
-        const content = base64ToUtf8(base64Content);
+        let content = base64ToUtf8(base64Content);
 
 // הסר BOM אם קיים
         if (content.charCodeAt(0) === 0xFEFF) {
