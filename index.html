@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Gantt – Ghana Energy CERT (Drag & Drop) + Import/Export + GitHub</title>
 <style>
-  /* ===== Version 18 ===== */
+  /* ===== Version 19 ===== */
   body{
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     margin:0;background:#f6f7fb;color:#111827;
@@ -47,6 +47,8 @@
   .row:nth-child(odd){background:#fafafa}
   .row .title{flex:1;direction:rtl;text-align:right;font-size:13px;line-height:1.2}
   .row .meta{font-size:12px;color:#374151;white-space:nowrap}
+  .row.clickable{cursor:pointer;}
+  .row.clickable:hover{background:#eef2ff;}
 
   .timeline{position:relative;min-height: 40px;border-bottom:1px solid #e5e7eb;background:#fff}
   .ticks{display:flex;position:sticky;top:0;background:#fff;z-index:2}
@@ -83,7 +85,7 @@
   .chart-legend .it{display:flex;gap:6px;align-items:center;font-size:12px;color:#374151}
   .chart-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
 
-  /* Modal */
+  /* Modal (shared style) */
   .modal-backdrop{
     position:fixed; inset:0;
     background:rgba(17,24,39,.55);
@@ -128,17 +130,20 @@
     overflow:auto;
     max-height:160px;
   }
+
+  /* Task modal status */
+  #taskStatusBox{ direction:ltr; text-align:left; }
 </style>
 </head>
 <body>
 <header>
   <h1>
     AMIR DAVIDI TECHNOLOGIES – גאנט פרויקט Ghana Energy CERT (Drag & Drop)
-    <span class="pill">Version 18</span>
+    <span class="pill">Version 19</span>
   </h1>
   <div class="meta">
     ✅ גרירה מזיזה משימה | ✅ גרירת קצוות משנה Duration | ✅ חצים לתלויות<br/>
-    ✅ Import/Export CSV | ✅ Load/Save ל-GitHub (tasks.csv) דרך Settings
+    ✅ Import/Export CSV | ✅ Load/Save ל-GitHub (tasks.csv) | ✅ לחיצה על משימה פותחת חלון עריכה מקצועי
     <span class="pill">UTF-8 BOM</span>
   </div>
 </header>
@@ -158,11 +163,10 @@
     <button class="btn-primary" id="exportCsv">Export CSV</button>
     <button class="btn-ghost" id="settingsBtn">Settings (GitHub)</button>
 
-    <!-- SINGLE Git/Utility bar (not duplicated) -->
     <button class="btn-ok" id="loadRepo" title="טען tasks.csv מה-GitHub (Public בלי טוקן דרך RAW; Private דרך API)">Load from GIT (tasks.csv)</button>
     <button class="btn-primary" id="saveRepo" title="שמור tasks.csv חזרה ל-GitHub (דורש Token עם הרשאות)">Save to GIT (tasks.csv)</button>
     <button class="btn-ghost" id="downloadTemplate" title="הורד תבנית CSV מלאה לייבוא">Download CSV Template</button>
-    <button class="btn-warn" id="clearLocal" title="מוחק שינויים מקומיים ומחזיר למצב טעינה מה-GIT">Clear Local Cache</button>
+    <button class="btn-warn" id="clearLocal" title="מוחק שינויים מקומיים ומחזיר למצב בסיס">Clear Local Cache</button>
 
     <div style="flex:1"></div>
 
@@ -203,7 +207,7 @@
       </div>
     </div>
     <div class="hint">
-      טיפ: לדיוק גבוה העבר ל-Zoom "יום". דאבל-קליק על בר מציג פרטים. Import/Drag נשמר מקומית. Save to GIT כותב ל-tasks.csv לפי Settings.
+      טיפ: לדיוק גבוה העבר ל-Zoom "יום". לחץ על שורה/בר כדי לערוך משימה. Import/Drag נשמר מקומית. Save to GIT כותב ל-tasks.csv לפי Settings.
     </div>
   </div>
 </div>
@@ -234,7 +238,7 @@
           <input id="ghPath" placeholder="tasks.csv"/>
         </div>
         <div class="fg" style="grid-column:1 / -1">
-          <label>Personal Access Token (classic/fine-grained) – נשמר רק בדפדפן שלך (localStorage)</label>
+          <label>Personal Access Token – נשמר רק בדפדפן שלך (localStorage)</label>
           <input id="ghToken" placeholder="ghp_... / github_pat_..." autocomplete="off" spellcheck="false"/>
         </div>
       </div>
@@ -249,7 +253,7 @@
       <div class="statusBox" id="statusBox">Status log…</div>
 
       <div class="hint" style="margin-top:10px">
-        הערה: Load ציבורי עובד גם בלי Token דרך raw.githubusercontent.com. Save תמיד דורש Token עם הרשאות לכתוב לקובץ.
+        הערה: Load ציבורי עובד גם בלי Token דרך raw.githubusercontent.com. Save תמיד דורש Token עם הרשאות כתיבה לקובץ.
       </div>
     </div>
     <div class="modal-ft">
@@ -259,9 +263,89 @@
   </div>
 </div>
 
+<!-- Task Editor Modal -->
+<div class="modal-backdrop" id="taskModalBg" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal">
+    <div class="modal-hd">
+      <h2 id="taskModalTitle">עריכת משימה</h2>
+      <button class="btn-ghost" id="closeTaskModal">סגור</button>
+    </div>
+
+    <div class="modal-bd">
+      <div class="form-grid">
+        <div class="fg">
+          <label>Task ID</label>
+          <input id="te_id" disabled />
+        </div>
+
+        <div class="fg">
+          <label>Owner</label>
+          <input id="te_owner" placeholder="Owner / אחראי" />
+        </div>
+
+        <div class="fg" style="grid-column:1 / -1">
+          <label>שם משימה</label>
+          <input id="te_name" placeholder="שם משימה" />
+        </div>
+
+        <div class="fg" style="grid-column:1 / -1">
+          <label>קטגוריה / שלב (Phase)</label>
+          <input id="te_phase" placeholder="לדוגמה: 6.1 Physical" />
+        </div>
+
+        <div class="fg">
+          <label>Start Offset (days)</label>
+          <input id="te_startOffset" type="number" min="0" step="1" />
+        </div>
+
+        <div class="fg">
+          <label>Duration (days)</label>
+          <input id="te_duration" type="number" min="1" step="1" />
+        </div>
+
+        <div class="fg">
+          <label>Milestone</label>
+          <select id="te_milestone">
+            <option value="0">לא</option>
+            <option value="1">כן</option>
+          </select>
+        </div>
+
+        <div class="fg">
+          <label>Dependencies (IDs)</label>
+          <input id="te_deps" placeholder="למשל: 12,15,16" />
+        </div>
+
+        <div class="fg" style="grid-column:1 / -1">
+          <label>Notes / הערות</label>
+          <input id="te_notes" placeholder="טקסט חופשי" />
+        </div>
+
+        <div class="fg">
+          <label>Start (Calculated)</label>
+          <input id="te_start" disabled />
+        </div>
+
+        <div class="fg">
+          <label>End (Calculated)</label>
+          <input id="te_end" disabled />
+        </div>
+      </div>
+
+      <div class="statusBox" id="taskStatusBox">Ready.</div>
+    </div>
+
+    <div class="modal-ft">
+      <button class="btn-warn" id="deleteTaskBtn">מחק משימה</button>
+      <button class="btn-ghost" id="duplicateTaskBtn">שכפל</button>
+      <button class="btn-primary" id="saveTaskBtn">שמור</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* =========================
-   Version 18 – GitHub ready
+   Version 19 – GitHub + Task Editor
    ========================= */
 
 const MS_DAY = 86400000;
@@ -279,9 +363,9 @@ const BASE = [
 let ALL = BASE.map(t => ({...t}));
 
 /* Local storage keys */
-const STORE_KEY      = "gantt_tasks_v18_edits";
-const STORE_KEY_CSV  = "gantt_tasks_v18_csv_snapshot";
-const STORE_GH_CFG   = "gantt_github_cfg_v18";
+const STORE_KEY      = "gantt_tasks_v19_edits";
+const STORE_KEY_CSV  = "gantt_tasks_v19_csv_snapshot";
+const STORE_GH_CFG   = "gantt_github_cfg_v19";
 
 /* ---------- Helpers ---------- */
 function daysBetween(a,b){ return Math.round((b-a)/MS_DAY); }
@@ -424,6 +508,7 @@ function attachDrag(barEl, pxPerDay){
     const t=findTask(barEl.dataset.id);
     if (t) persistOne(t);
     try{ barEl.releasePointerCapture(e.pointerId);}catch(_){}
+    render(); // refresh dependencies layout if changed
   }
 
   barEl.addEventListener('pointerdown', onPointerDown);
@@ -441,6 +526,14 @@ function applyMilestoneStyle(barEl, isMilestone){
   }
   barEl.style.borderRadius = "4px";
   barEl.style.transform = "rotate(45deg)";
+}
+
+/* ---------- Security helper ---------- */
+function escapeHtml(s){
+  s = String(s ?? "");
+  return s.replace(/[&<>"']/g, (ch)=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+  }[ch]));
 }
 
 /* ---------- Render ---------- */
@@ -477,9 +570,11 @@ function render(){
   h.className='row'; h.style.fontWeight='900';
   h.innerHTML = `<div class="meta">ID</div><div class="title">משימה</div><div class="meta">Owner</div>`;
   left.appendChild(h);
+
   list.forEach(t=>{
-    const r=document.createElement('div'); r.className='row';
-    r.innerHTML = `<div class="meta">#${t.id}</div><div class="title">${escapeHtml(t.name)}</div><div class="meta">${escapeHtml(t.owner||'')}</div>`;
+    const r=document.createElement('div'); r.className='row clickable';
+    r.innerHTML = `<div class="meta">#${escapeHtml(t.id)}</div><div class="title">${escapeHtml(t.name)}</div><div class="meta">${escapeHtml(t.owner||'')}</div>`;
+    r.addEventListener('click', ()=> openTaskModal(t.id));
     left.appendChild(r);
   });
 
@@ -539,8 +634,13 @@ function render(){
     const hR=document.createElement('div'); hR.className='handle right'; hR.dataset.handle='right';
     if (!isMs){ bar.appendChild(hL); bar.appendChild(hR); }
 
-    bar.addEventListener('dblclick', ()=>{
-      alert(`Task #${t.id}\n${t.name}\nPhase: ${t.phase}\nOwner: ${t.owner}\nStart: ${t.start}\nEnd: ${t.end}\nDuration: ${t.duration}d\nMilestone: ${t.milestone?'YES':'NO'}\nDeps: ${t.deps||'-'}\nNotes: ${t.notes||'-'}`);
+    // click to edit (professional modal)
+    bar.addEventListener('click', (e)=>{
+      // avoid click when user is dragging
+      if (bar.classList.contains('dragging')) return;
+      openTaskModal(t.id);
+      e.preventDefault();
+      e.stopPropagation();
     });
 
     attachDrag(bar, pxPerDay);
@@ -748,7 +848,6 @@ async function importCSVFromFile(file){
 function clearLocalCache(){
   localStorage.removeItem(STORE_KEY);
   localStorage.removeItem(STORE_KEY_CSV);
-  // keep GitHub settings
   ALL = BASE.map(t=>({...t}));
   ALL.forEach(calcDatesFromOffsets);
   rebuildOwnerOptions(ALL);
@@ -963,9 +1062,44 @@ function buildRawUrl(cfg){
   return `https://raw.githubusercontent.com/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/${encodeURIComponent(cfg.branch)}/${cfg.path.replace(/^\/+/,'')}`;
 }
 function buildApiUrl(cfg){
-  // https://api.github.com/repos/{owner}/{repo}/contents/{path}?ref={branch}
   const p = cfg.path.replace(/^\/+/,'');
   return `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${p}?ref=${encodeURIComponent(cfg.branch)}`;
+}
+
+async function importCSVFromText(text, sourceLabel){
+  const rows = parseCSV(text);
+  const tasks = rows.map(coerceTask).filter(t=>t && t.id);
+  if (!tasks.length){
+    logStatus(`Import(${sourceLabel}) failed: 0 tasks`);
+    alert("טעינה הצליחה אבל לא נמצאו משימות ב-CSV (בדוק כותרות עמודות / פורמט).");
+    return;
+  }
+
+  ALL = tasks.map(t=>({...t}));
+  ALL.forEach(calcDatesFromOffsets);
+
+  const edits = {};
+  ALL.forEach(t=>{
+    edits[t.id] = {
+      id:String(t.id),
+      phase:t.phase||"",
+      name:t.name||"",
+      owner:t.owner||"",
+      startOffset:Number(t.startOffset||0),
+      duration:Number(t.duration||1),
+      deps:t.deps||"",
+      milestone: !!t.milestone,
+      notes: t.notes||"",
+      start:t.start, end:t.end
+    };
+  });
+  saveEdits(edits);
+  rebuildOwnerOptions(ALL);
+  document.getElementById('ownerFilter').value = "";
+  render();
+  updateCharts();
+  logStatus(`✅ Imported ${ALL.length} tasks from ${sourceLabel}`);
+  alert(`✅ נטענו ${ALL.length} משימות (${sourceLabel}).`);
 }
 
 async function ghLoadTasks(){
@@ -975,7 +1109,6 @@ async function ghLoadTasks(){
     return;
   }
 
-  // First try RAW (public)
   const rawUrl = buildRawUrl(cfg);
   logStatus(`Load RAW: ${rawUrl}`);
   try{
@@ -990,7 +1123,6 @@ async function ghLoadTasks(){
     logStatus(`RAW error: ${e}`);
   }
 
-  // Fallback API (token)
   if (!cfg.token){
     alert("טעינה RAW נכשלה (אולי Repo פרטי). הוסף Token ב-Settings ואז נסה שוב.");
     return;
@@ -1031,10 +1163,9 @@ async function ghSaveTasks(){
   }
 
   ALL.forEach(calcDatesFromOffsets);
-  const csvText = exportCSVText(ALL).replace(/^\uFEFF/, ""); // store without BOM in repo (optional)
+  const csvText = exportCSVText(ALL).replace(/^\uFEFF/, "");
   const contentB64 = btoa(unescape(encodeURIComponent(csvText)));
 
-  // Need SHA of current file if exists
   const apiUrl = buildApiUrl(cfg).replace(/(\?ref=).+$/,'') + `?ref=${encodeURIComponent(cfg.branch)}`;
   logStatus(`Fetch SHA: ${apiUrl}`);
   let sha = null;
@@ -1061,7 +1192,7 @@ async function ghSaveTasks(){
 
   const putUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${cfg.path.replace(/^\/+/,'')}`;
   const body = {
-    message: `Update ${cfg.path} via Gantt v18`,
+    message: `Update ${cfg.path} via Gantt v19`,
     content: contentB64,
     branch: cfg.branch
   };
@@ -1089,55 +1220,8 @@ async function ghSaveTasks(){
   alert("✅ נשמר ל-GitHub בהצלחה.");
 }
 
-/* Import CSV from text (used by Git load) */
-async function importCSVFromText(text, sourceLabel){
-  const rows = parseCSV(text);
-  const tasks = rows.map(coerceTask).filter(t=>t && t.id);
-  if (!tasks.length){
-    logStatus(`Import(${sourceLabel}) failed: 0 tasks`);
-    alert("טעינה הצליחה אבל לא נמצאו משימות ב-CSV (בדוק כותרות עמודות / פורמט).");
-    return;
-  }
-
-  ALL = tasks.map(t=>({...t}));
-  ALL.forEach(calcDatesFromOffsets);
-
-  // persist all as edits
-  const edits = {};
-  ALL.forEach(t=>{
-    edits[t.id] = {
-      id:String(t.id),
-      phase:t.phase||"",
-      name:t.name||"",
-      owner:t.owner||"",
-      startOffset:Number(t.startOffset||0),
-      duration:Number(t.duration||1),
-      deps:t.deps||"",
-      milestone: !!t.milestone,
-      notes: t.notes||"",
-      start:t.start, end:t.end
-    };
-  });
-  saveEdits(edits);
-  rebuildOwnerOptions(ALL);
-  document.getElementById('ownerFilter').value = "";
-  render();
-  updateCharts();
-  logStatus(`✅ Imported ${ALL.length} tasks from ${sourceLabel}`);
-  alert(`✅ נטענו ${ALL.length} משימות (${sourceLabel}).`);
-}
-
-/* ---------- Security helper ---------- */
-function escapeHtml(s){
-  s = String(s ?? "");
-  return s.replace(/[&<>"']/g, (ch)=>({
-    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
-  }[ch]));
-}
-
 /* ---------- Settings modal wiring ---------- */
 const modalBg = document.getElementById('modalBg');
-
 function openSettings(){
   const cfg = loadGhCfg();
   document.getElementById('ghOwner').value  = cfg.owner || "";
@@ -1212,6 +1296,140 @@ document.getElementById('testApi').addEventListener('click', async ()=>{
   alert("API status: " + r.status);
 });
 
+/* =========================
+   Task Editor (Professional)
+   ========================= */
+let CURRENT_EDIT_ID = null;
+
+function tlog(msg){
+  const box = document.getElementById('taskStatusBox');
+  if (!box) return;
+  const ts = new Date().toLocaleTimeString();
+  box.textContent = `[${ts}] ${msg}\n` + box.textContent;
+}
+
+function openTaskModal(taskId){
+  const t = findTask(taskId);
+  if (!t){ alert("משימה לא נמצאה"); return; }
+
+  CURRENT_EDIT_ID = String(taskId);
+  calcDatesFromOffsets(t);
+
+  document.getElementById('taskModalTitle').textContent = `עריכת משימה #${t.id}`;
+  document.getElementById('te_id').value = t.id;
+  document.getElementById('te_name').value = t.name || "";
+  document.getElementById('te_phase').value = t.phase || "";
+  document.getElementById('te_owner').value = t.owner || "";
+  document.getElementById('te_startOffset').value = Number(t.startOffset || 0);
+  document.getElementById('te_duration').value = Number(t.duration || 1);
+  document.getElementById('te_deps').value = t.deps || "";
+  document.getElementById('te_milestone').value = t.milestone ? "1" : "0";
+  document.getElementById('te_notes').value = t.notes || "";
+  document.getElementById('te_start').value = t.start || "";
+  document.getElementById('te_end').value = t.end || "";
+
+  const bg = document.getElementById('taskModalBg');
+  bg.style.display = "flex";
+  bg.setAttribute("aria-hidden","false");
+  tlog("Opened editor.");
+  setTimeout(()=> document.getElementById('te_name').focus(), 50);
+}
+
+function closeTaskModal(){
+  const bg = document.getElementById('taskModalBg');
+  bg.style.display = "none";
+  bg.setAttribute("aria-hidden","true");
+  CURRENT_EDIT_ID = null;
+}
+
+function applyTaskEditsFromModal(){
+  if (!CURRENT_EDIT_ID) return null;
+  const t = findTask(CURRENT_EDIT_ID);
+  if (!t) return null;
+
+  const name = document.getElementById('te_name').value.trim();
+  const phase = document.getElementById('te_phase').value.trim();
+  const owner = document.getElementById('te_owner').value.trim();
+  const deps  = document.getElementById('te_deps').value.trim();
+  const notes = document.getElementById('te_notes').value.trim();
+
+  const startOffset = Number(document.getElementById('te_startOffset').value);
+  const duration    = Number(document.getElementById('te_duration').value);
+  const milestone   = document.getElementById('te_milestone').value === "1";
+
+  if (!name){ alert("שם משימה חובה"); return null; }
+  if (!Number.isFinite(startOffset) || startOffset < 0){ alert("StartOffset לא תקין"); return null; }
+  if (!Number.isFinite(duration) || duration < 1){ alert("Duration לא תקין"); return null; }
+
+  t.name = name;
+  t.phase = phase;
+  t.owner = owner;
+  t.deps = deps;
+  t.notes = notes;
+  t.startOffset = Math.round(startOffset);
+  t.duration = Math.round(duration);
+  t.milestone = milestone;
+
+  calcDatesFromOffsets(t);
+  document.getElementById('te_start').value = t.start;
+  document.getElementById('te_end').value = t.end;
+
+  persistOne(t);
+  rebuildOwnerOptions(ALL);
+  render();
+  updateCharts();
+  tlog("Saved and re-rendered.");
+  return t;
+}
+
+function deleteCurrentTask(){
+  if (!CURRENT_EDIT_ID) return;
+  const t = findTask(CURRENT_EDIT_ID);
+  if (!t) return;
+
+  const ok = confirm(`למחוק את משימה #${t.id}?\nזה יימחק מהתצוגה ומה-Local edits.`);
+  if (!ok) return;
+
+  ALL = ALL.filter(x => String(x.id) !== String(CURRENT_EDIT_ID));
+
+  try{
+    const edits = loadEdits() || {};
+    delete edits[CURRENT_EDIT_ID];
+    saveEdits(edits);
+  }catch(_){}
+
+  rebuildOwnerOptions(ALL);
+  render();
+  updateCharts();
+  tlog("Task deleted.");
+  closeTaskModal();
+}
+
+function nextNumericId(){
+  const nums = ALL.map(t=>Number(String(t.id).replace(/[^\d]/g,''))).filter(n=>Number.isFinite(n));
+  const maxN = nums.length ? Math.max(...nums) : 0;
+  return String(maxN + 1);
+}
+
+function duplicateCurrentTask(){
+  if (!CURRENT_EDIT_ID) return;
+  const t = findTask(CURRENT_EDIT_ID);
+  if (!t) return;
+
+  const newId = nextNumericId();
+  const copy = {...t, id:newId, name: (t.name||"") + " (Copy)"};
+
+  ALL.push(copy);
+  calcDatesFromOffsets(copy);
+  persistOne(copy);
+
+  rebuildOwnerOptions(ALL);
+  render();
+  updateCharts();
+  tlog(`Duplicated to #${newId}.`);
+  openTaskModal(newId);
+}
+
 /* ---------- Main buttons wiring ---------- */
 document.getElementById('exportCsv').addEventListener('click', exportCSV);
 document.getElementById('downloadTemplate').addEventListener('click', downloadTemplate);
@@ -1229,6 +1447,28 @@ document.getElementById('importBtn').addEventListener('click', async ()=>{
 document.getElementById('q').addEventListener('input', ()=>{ render(); });
 document.getElementById('ownerFilter').addEventListener('change', ()=>{ render(); });
 document.getElementById('zoom').addEventListener('change', ()=>{ render(); });
+
+/* Task modal wiring */
+const taskBg = document.getElementById('taskModalBg');
+document.getElementById('closeTaskModal').addEventListener('click', closeTaskModal);
+taskBg.addEventListener('click', (e)=>{ if (e.target === taskBg) closeTaskModal(); });
+document.getElementById('saveTaskBtn').addEventListener('click', ()=> applyTaskEditsFromModal());
+document.getElementById('deleteTaskBtn').addEventListener('click', deleteCurrentTask);
+document.getElementById('duplicateTaskBtn').addEventListener('click', duplicateCurrentTask);
+
+// keyboard shortcuts
+document.addEventListener('keydown', (e)=>{
+  if (e.key === "Escape"){
+    if (taskBg.style.display === "flex") closeTaskModal();
+    if (modalBg.style.display === "flex") closeSettings();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==="s"){
+    if (taskBg.style.display === "flex"){
+      e.preventDefault();
+      applyTaskEditsFromModal();
+    }
+  }
+});
 
 /* ---------- Initial ---------- */
 setCfgHint();
