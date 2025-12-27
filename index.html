@@ -1381,6 +1381,16 @@
       UI_SETTINGS: 'ui_settings_v2'
     };
 
+    // ===== UTF-8 safe Base64 decode (GitHub content) =====
+    function base64ToUtf8(base64) {
+      const clean = (base64 || '').replace(/\s/g, '');
+      const binStr = atob(clean);
+      const bytes = new Uint8Array(binStr.length);
+      for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+      return new TextDecoder('utf-8').decode(bytes);
+    }
+
+
     const COLORS = {
       phases: [
         '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444',
@@ -2041,84 +2051,6 @@
     }
 
     logDebug(`פענוח הושלם: ${tasks.length} משימות נוצרו`);
-    return tasks;
-}
-    if (!csvString) return [];
-    
-    // ניקוי תווים בלתי נראים בתחילת הקובץ (BOM)
-    csvString = csvString.trim();
-    const lines = csvString.split(/\r?\n/);
-    if (lines.length < 2) return [];
-
-    // פונקציית עזר לפירוק שורת CSV בצורה חכמה (תומכת במירכאות)
-    function splitCSVLine(line) {
-        const result = [];
-        let curVal = '';
-        let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            const nextChar = line[i + 1];
-            if (char === '"' && inQuotes && nextChar === '"') {
-                curVal += '"'; i++; // טיפול במירכאות כפולות
-            } else if (char === '"') {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                result.push(curVal.trim());
-                curVal = '';
-            } else {
-                curVal += char;
-            }
-        }
-        result.push(curVal.trim());
-        return result;
-    }
-
-    const headers = splitCSVLine(lines[0]);
-    const tasks = [];
-
-    // מיפוי כותרות לעמודות (תומך בעברית)
-    const colMap = {
-        id: headers.findIndex(h => h.includes('מזהה')),
-        phase: headers.findIndex(h => h.includes('קטגוריה') || h.includes('שלב')),
-        name: headers.findIndex(h => h.includes('שם משימה')),
-        owner: headers.findIndex(h => h.includes('אחראי')),
-        start: headers.findIndex(h => h.includes('תאריך התחלה')),
-        end: headers.findIndex(h => h.includes('תאריך סיום')),
-        duration: headers.findIndex(h => h.includes('משך')),
-        deps: headers.findIndex(h => h.includes('תלויות')),
-        notes: headers.findIndex(h => h.includes('הערות')),
-        offset: headers.findIndex(h => h.includes('startOffset')),
-        milestone: headers.findIndex(h => h.includes('milestone'))
-    };
-
-    for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
-        
-        const cols = splitCSVLine(lines[i]);
-        const id = cols[colMap.id];
-        const name = cols[colMap.name];
-
-        if (!id || !name) {
-            logDebug(`דילוג על שורה ${i + 1}: חסר מזהה (${id}) או שם (${name})`);
-            continue;
-        }
-
-        tasks.push({
-            id: id.toString(),
-            phase: cols[colMap.phase] || 'כללי',
-            name: name,
-            owner: cols[colMap.owner] || '',
-            start: cols[colMap.start] || '',
-            end: cols[colMap.end] || '',
-            duration: parseInt(cols[colMap.duration]) || 1,
-            dependencies: cols[colMap.deps] ? cols[colMap.deps].toString().split(/[,;]/).map(d => d.trim()).filter(d => d) : [],
-            notes: cols[colMap.notes] || '',
-            startOffset: parseInt(cols[colMap.offset]) || 0,
-            milestone: cols[colMap.milestone] === 'true' || cols[colMap.milestone] === 'TRUE' || cols[colMap.milestone] === '1',
-            status: 'not-started'
-        });
-    }
-
     return tasks;
 }
     function parseCSVLine(line) {
@@ -3417,13 +3349,3 @@
   </script>
 </body>
 </html>
-    // ===== UTF-8 safe Base64 decode (GitHub content) =====
-    function base64ToUtf8(base64) {
-      const clean = (base64 || '').replace(/\s/g, '');
-      const binStr = atob(clean);
-      const bytes = new Uint8Array(binStr.length);
-      for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
-      return new TextDecoder('utf-8').decode(bytes);
-    }
-
-
