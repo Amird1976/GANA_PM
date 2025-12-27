@@ -1793,7 +1793,24 @@
       }
     }
 
-    async function loadFromGitHub() {
+    
+// המרה בטוחה של Base64 ל-UTF8 (כדי שעברית לא תיהרס ב-atob)
+function base64ToUtf8(base64) {
+  const binary = atob(base64);
+  // TextDecoder קיים בכל הדפדפנים המודרניים; נותן עברית תקינה
+  if (typeof TextDecoder !== 'undefined') {
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+  // fallback ישן
+  try {
+    return decodeURIComponent(escape(binary));
+  } catch (e) {
+    return binary;
+  }
+}
+
+async function loadFromGitHub() {
       if (!githubSettings || !githubSettings.token) {
         showToast('נא להגדיר את פרטי GitHub תחילה', 'warning');
         document.getElementById('settingsBtn').click();
@@ -1831,18 +1848,11 @@
         const data = await response.json();
         GH_SHA = data.sha;
         
-        // פענוח תוכן
+        // פענוח תוכן (UTF-8 בטוח לעברית)
         const base64Content = data.content.replace(/\s/g, '');
-        let content;
-        
-        try {
-          content = atob(base64Content);
-        } catch (e) {
-          logDebug('נסיון פענוח חלופי...');
-          content = decodeURIComponent(escape(atob(base64Content)));
-        }
-        
-        // הסר BOM אם קיים
+        const content = base64ToUtf8(base64Content);
+
+// הסר BOM אם קיים
         if (content.charCodeAt(0) === 0xFEFF) {
           content = content.substring(1);
         }
@@ -2069,7 +2079,8 @@
     logDebug(`כותרות שזוהו: ${headers.join(' | ')}`);
 
     // מיפוי גמיש יותר - מחפש חלקי מילים כדי לא להיכשל על רווחים
-    const findCol = (terms) => headers.findIndex(h => terms.some(t => h.includes(t)));
+    const norm = (s) => String(s||'').replace(/^\uFEFF/, '').replace(/["']/g,'').trim();
+     const findCol = (terms) => headers.findIndex(h => terms.some(t => norm(h).includes(t)));
 
     const colMap = {
         id: findCol(['מזהה', 'ID']),
