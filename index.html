@@ -2,74 +2,633 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>Gantt CERT Professional – גרסה 16</title>
+<title>Gantt CERT Professional – גרסה 17</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f5f7fb}
-header{background:#0b1c2d;color:#fff;padding:16px}
-main{padding:20px}
-#log{background:#000;color:#0f0;padding:10px;font-size:12px;max-height:200px;overflow:auto}
-button{padding:8px 12px;margin:4px}
+  :root{
+    --bg:#f5f7fb; --card:#fff; --text:#0b1c2d; --muted:#6b7a90; --border:#e5eaf3;
+    --header:#0b1c2d; --accent:#f5a623;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--text)}
+  header{background:linear-gradient(180deg,#0b1c2d,#081522);color:#fff;padding:14px 18px;position:sticky;top:0;z-index:5}
+  header .top{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  header h1{margin:0;font-size:20px;letter-spacing:.2px}
+  header .sub{opacity:.85;font-size:12px}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);font-size:12px}
+  .wrap{max-width:1400px;margin:0 auto;padding:16px}
+  .grid{display:grid;grid-template-columns: 380px 1fr;gap:16px}
+  @media (max-width: 1100px){ .grid{grid-template-columns:1fr} }
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 25px rgba(11,28,45,.06)}
+  .card h2{margin:0;padding:12px 14px;border-bottom:1px solid var(--border);font-size:14px}
+  .card .body{padding:12px 14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button{cursor:pointer;border:1px solid var(--border);background:#fff;border-radius:10px;padding:9px 10px;font-weight:700}
+  button.primary{background:var(--accent);border-color:transparent;color:#111}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  input,select{border:1px solid var(--border);border-radius:10px;padding:9px 10px;background:#fff}
+  #status{font-size:12px;color:var(--muted);margin-top:8px}
+  #log{background:#0b0f14;color:#b9ffb9;border-radius:12px;padding:10px;font-size:12px;max-height:180px;overflow:auto;display:none}
+  #log.show{display:block}
+  .legend{display:flex;flex-direction:column;gap:8px}
+  .legendItem{display:flex;gap:10px;align-items:flex-start;border:1px dashed var(--border);border-radius:12px;padding:10px}
+  .swatch{width:14px;height:14px;border-radius:4px;flex:0 0 auto;margin-top:2px}
+  .legendItem .t{font-size:12px;font-weight:800}
+  .legendItem .d{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.25}
+  .accordion{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .accHead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#fbfcfe;border-bottom:1px solid var(--border);cursor:pointer}
+  .accHead b{font-size:13px}
+  .accHead span{font-size:12px;color:var(--muted)}
+  .accBody{display:none;padding:10px 12px}
+  .accordion.open .accBody{display:block}
+  .tasksTable{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}
+  .tasksTable th,.tasksTable td{border-bottom:1px solid var(--border);padding:8px 6px;font-size:12px;vertical-align:top}
+  .tasksTable th{position:sticky;top:0;background:#fff;z-index:1}
+  .tasksTable input,.tasksTable select{width:100%;padding:6px 8px;border-radius:8px}
+  .mini{font-size:11px;color:var(--muted)}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .toolbar .right{margin-right:auto}
+  /* Gantt */
+  #ganttWrap{padding:0}
+  #ganttTools{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  #ganttViewport{height:560px;overflow:auto}
+  .gantt{min-width:1100px}
+  .ganttHeader{position:sticky;top:0;background:#fff;z-index:2;border-bottom:1px solid var(--border)}
+  .ganttHeader .days{display:flex}
+  .day{flex:0 0 var(--pxDay);border-left:1px solid #eef2f8;padding:6px 0;text-align:center;font-size:11px;color:var(--muted);white-space:nowrap}
+  .gRow{display:flex;border-bottom:1px solid #f0f3f9}
+  .gLeft{flex:0 0 340px;border-left:1px solid var(--border);padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+  .gLeft .name{font-weight:800;font-size:12px}
+  .gLeft .meta{font-size:11px;color:var(--muted)}
+  .gRight{position:relative;flex:1;min-width:600px}
+  .bar{position:absolute;height:18px;border-radius:9px;top:10px;display:flex;align-items:center;padding:0 8px;font-size:11px;color:#0b1c2d;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border:1px solid rgba(11,28,45,.12)}
+  .bar.milestone{width:14px;height:14px;border-radius:3px;transform:rotate(45deg);top:12px;padding:0}
+  .gridline{position:absolute;top:0;bottom:0;width:1px;background:#f1f4fa}
+  .hint{padding:10px 14px;font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
 <header>
-  <h1>Gantt CERT Professional</h1>
-  <div>Ghana Energy CERT – Amir Davidi Technologies | <b>גרסה 16</b></div>
+  <div class="top">
+    <div>
+      <h1>Gantt CERT Professional</h1>
+      <div class="sub">Ghana Energy CERT – Amir Davidi Technologies | <b>גרסה 17</b></div>
+    </div>
+    <div class="pill">
+      <span id="ghState">GitHub: לא מחובר</span> •
+      <span id="taskState">משימות: 0</span>
+    </div>
+  </div>
 </header>
 
-<main>
-  <button onclick="loadFromGitHub()">טען משימות מ‑GitHub</button>
-  <div id="status">מוכן</div>
-  <pre id="log"></pre>
-</main>
+<div class="wrap">
+  <div class="grid">
+
+    <section class="card">
+      <h2>שליטה ו‑Debug</h2>
+      <div class="body">
+        <div class="toolbar">
+          <button class="primary" id="btnLoad" onclick="loadFromGitHub()">טען מ‑GitHub</button>
+          <button id="btnDebug" onclick="toggleDebug()">דיבאג</button>
+          <button id="btnExpand" onclick="expandAll(true)">הצג הכל</button>
+          <button id="btnCollapse" onclick="expandAll(false)">כווץ הכל</button>
+          <span class="right mini" id="status">מוכן</span>
+        </div>
+        <div style="height:10px"></div>
+        <div class="mini">מקור ברירת מחדל: <b>Amird1976/GANA_PM</b> / <b>tasks.csv</b></div>
+        <pre id="log"></pre>
+      </div>
+    </section>
+
+    <section class="card" id="ganttWrap">
+      <div id="ganttTools">
+        <label class="mini">פיקסלים ליום</label>
+        <select id="pxDay" onchange="setPxDay(this.value)">
+          <option value="18">18</option>
+          <option value="24">24</option>
+          <option value="30">30</option>
+          <option value="40" selected>40</option>
+          <option value="60">60</option>
+        </select>
+        <span class="mini">גלול עם העכבר, ובמובייל גרור עם האצבע.</span>
+      </div>
+      <div id="ganttViewport">
+        <div id="gantt" class="gantt"></div>
+        <div class="hint">💡 עריכה: השתמש בטבלת המשימות משמאל כדי לעדכן שם/תאריכים/תלויות. בגרסה הבאה נוסיף Drag על הברים.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>מקרא קטגוריות</h2>
+      <div class="body">
+        <div id="legend" class="legend"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>משימות לפי נושא (מתקפל)</h2>
+      <div class="body" id="groups"></div>
+    </section>
+
+  </div>
+</div>
 
 <script>
 'use strict';
 
+const CONFIG = {
+  owner: 'Amird1976',
+  repo: 'GANA_PM',
+  path: 'tasks.csv',
+  branch: 'main'
+};
+
+let state = {
+  tasks: [],
+  groupsOpen: new Set(),
+  pxDay: 40
+};
+
+function safeStorageGet(key){
+  try{ return localStorage.getItem(key); }catch(_){ return null; }
+}
+function safeStorageSet(key,val){
+  try{ localStorage.setItem(key,val); }catch(_){ /* blocked */ }
+}
+
 function log(msg){
   const el=document.getElementById('log');
-  el.textContent += msg + "\n";
+  const t=new Date().toLocaleTimeString('he-IL',{hour12:false});
+  el.textContent += '['+t+'] ' + msg + '\\n';
   el.scrollTop = el.scrollHeight;
+}
+function setStatus(s){ document.getElementById('status').textContent = s; }
+function setHeaderStats(){
+  document.getElementById('taskState').textContent = 'משימות: ' + (state.tasks?.length || 0);
+}
+
+function toggleDebug(){
+  const el=document.getElementById('log');
+  el.classList.toggle('show');
 }
 
 function base64ToUtf8(b64){
-  const bin = atob(b64.replace(/\s/g,''));
+  const clean = (b64||'').replace(/\\s/g,'');
+  const bin = atob(clean);
   const bytes = new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++){bytes[i]=bin.charCodeAt(i);}
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
   return new TextDecoder('utf-8').decode(bytes);
 }
 
-async function loadFromGitHub(){
-  try{
-    document.getElementById('status').textContent='טוען…';
-    log('שולח בקשה ל‑GitHub');
-    const url='https://api.github.com/repos/Amird1976/GANA_PM/contents/tasks.csv?ref=main';
-    const res=await fetch(url);
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const data=await res.json();
-    const csv=base64ToUtf8(data.content);
-    log('CSV נטען, אורך: '+csv.length);
-    parseCSV(csv);
-    document.getElementById('status').textContent='נטען בהצלחה';
-  }catch(e){
-    document.getElementById('status').textContent='שגיאה';
-    log('שגיאה: '+e.message);
-  }
+function normalizeHeader(s){
+  return (s||'')
+    .replace(/^\\uFEFF/,'')        // BOM
+    .replace(/[\\u200E\\u200F\\u202A-\\u202E]/g,'') // bidi marks
+    .replace(/^["']|["']$/g,'')
+    .trim();
 }
 
 function parseCSV(csv){
-  const lines=csv.split(/\r?\n/).filter(l=>l.trim());
-  if(lines.length<2){log('אין שורות');return;}
-  const headers=lines[0].split(',').map(h=>h.trim());
-  log('כותרות: '+headers.join(' | '));
-  let count=0;
-  for(let i=1;i<lines.length;i++){
-    const cols=lines[i].split(',');
-    if(cols[0] && cols[1]) count++;
+  if(!csv) return [];
+  // Remove BOM at very start
+  if(csv.charCodeAt(0) === 0xFEFF) csv = csv.slice(1);
+
+  const lines = csv.split(/\\r?\\n/).filter(l => l.trim().length>0);
+  if(lines.length < 2) return [];
+
+  // CSV split with simple quoted support
+  function splitCSVLine(line){
+    const out=[];
+    let cur='', inQ=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch === '"' ){
+        if(inQ && line[i+1] === '"'){ cur+='"'; i++; }
+        else inQ = !inQ;
+      } else if(ch === ',' && !inQ){
+        out.push(cur); cur='';
+      } else {
+        cur += ch;
+      }
+    }
+    out.push(cur);
+    return out;
   }
-  log('משימות שזוהו: '+count);
+
+  const rawHeaders = splitCSVLine(lines[0]).map(h => normalizeHeader(h));
+  log('כותרות שזוהו: ' + rawHeaders.join(' | '));
+
+  const idx = {
+    id: rawHeaders.findIndex(h => ['מזהה','ID','id'].includes(h)),
+    cat: rawHeaders.findIndex(h => ['קטגוריה/שלב','קטגוריה','שלב','Category'].includes(h)),
+    name: rawHeaders.findIndex(h => ['שם משימה','משימה','Task','Name'].includes(h)),
+    owner: rawHeaders.findIndex(h => ['אחראי','Owner','Responsible'].includes(h)),
+    start: rawHeaders.findIndex(h => ['תאריך התחלה','Start','Start Date'].includes(h)),
+    end: rawHeaders.findIndex(h => ['תאריך סיום','End','End Date'].includes(h)),
+    dur: rawHeaders.findIndex(h => ['משך (ימים)','משך','Duration'].includes(h)),
+    deps: rawHeaders.findIndex(h => ['תלויות','Dependencies','Deps'].includes(h)),
+    notes: rawHeaders.findIndex(h => ['הערות','Notes'].includes(h)),
+    startOffset: rawHeaders.findIndex(h => ['startOffset'].includes(h)),
+    milestone: rawHeaders.findIndex(h => ['milestone','Milestone'].includes(h)),
+  };
+
+  if(idx.id < 0 || idx.name < 0){
+    throw new Error('לא נמצאו עמודות חובה (מזהה או שם משימה)');
+  }
+
+  function parseDate(s){
+    s=(s||'').trim();
+    if(!s) return null;
+    // allow DD.MM.YY or DD/MM/YY or YYYY-MM-DD
+    const m1 = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
+    if(m1){
+      let d=+m1[1], mo=+m1[2], y=+m1[3];
+      if(y<100) y = 2000 + y;
+      return new Date(Date.UTC(y, mo-1, d));
+    }
+    const m2 = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if(m2){
+      return new Date(Date.UTC(+m2[1], +m2[2]-1, +m2[3]));
+    }
+    const dt = new Date(s);
+    if(!isNaN(dt.getTime())) return new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+    return null;
+  }
+
+  const tasks=[];
+  for(let i=1;i<lines.length;i++){
+    const cols = splitCSVLine(lines[i]);
+    const id = (cols[idx.id]||'').trim();
+    const name = (cols[idx.name]||'').trim();
+    if(!id || !name) continue;
+
+    const cat = idx.cat>=0 ? (cols[idx.cat]||'').trim() : '';
+    const owner = idx.owner>=0 ? (cols[idx.owner]||'').trim() : '';
+    const start = idx.start>=0 ? parseDate(cols[idx.start]) : null;
+    const end = idx.end>=0 ? parseDate(cols[idx.end]) : null;
+    const dur = idx.dur>=0 ? +((cols[idx.dur]||'').trim()) : NaN;
+    const deps = idx.deps>=0 ? (cols[idx.deps]||'').trim() : '';
+    const notes = idx.notes>=0 ? (cols[idx.notes]||'').trim() : '';
+    const startOffset = idx.startOffset>=0 ? (cols[idx.startOffset]||'').trim() : '';
+    const milestone = idx.milestone>=0 ? (cols[idx.milestone]||'').trim() : '';
+
+    tasks.push({id,name,cat,owner,start,end,dur,deps,notes,startOffset,milestone});
+  }
+  return tasks;
 }
+
+function colorFromString(str){
+  // deterministic nice-ish color via HSL
+  let h=0;
+  for(let i=0;i<(str||'').length;i++) h = (h*31 + str.charCodeAt(i)) % 360;
+  return `hsl(${h} 70% 70%)`;
+}
+
+function dateRange(tasks){
+  const starts = tasks.map(t=>t.start).filter(Boolean).map(d=>d.getTime());
+  const ends = tasks.map(t=>t.end).filter(Boolean).map(d=>d.getTime());
+  if(!starts.length || !ends.length){
+    const now = new Date();
+    const a = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const b = new Date(a.getTime()+ 30*86400000);
+    return {min:a, max:b};
+  }
+  const min = new Date(Math.min(...starts));
+  const max = new Date(Math.max(...ends));
+  return {min, max};
+}
+
+function daysBetween(a,b){
+  return Math.round((b.getTime()-a.getTime())/86400000);
+}
+
+function setPxDay(v){
+  state.pxDay = parseInt(v,10) || 40;
+  document.documentElement.style.setProperty('--pxDay', state.pxDay+'px');
+  renderAll();
+}
+
+function expandAll(open){
+  const groups = new Set(state.tasks.map(t => (t.cat||'ללא קטגוריה').trim() || 'ללא קטגוריה'));
+  state.groupsOpen = open ? groups : new Set();
+  renderGroups();
+}
+
+function groupTasks(tasks){
+  const map = new Map();
+  for(const t of tasks){
+    const key = (t.cat||'ללא קטגוריה').trim() || 'ללא קטגוריה';
+    if(!map.has(key)) map.set(key, []);
+    map.get(key).push(t);
+  }
+  // stable sort by key
+  return Array.from(map.entries()).sort((a,b)=>a[0].localeCompare(b[0],'he'));
+}
+
+function renderLegend(){
+  const el = document.getElementById('legend');
+  el.innerHTML='';
+  const groups = groupTasks(state.tasks);
+  for(const [cat, arr] of groups){
+    const sw = colorFromString(cat);
+    // Description rule: show cat + sample owners + number of tasks
+    const owners = Array.from(new Set(arr.map(t=>t.owner).filter(Boolean))).slice(0,3);
+    const desc = `כולל ${arr.length} משימות` + (owners.length ? ` • אחראים לדוגמה: ${owners.join(', ')}` : '');
+    const item = document.createElement('div');
+    item.className='legendItem';
+    item.innerHTML = `<div class="swatch" style="background:${sw}"></div>
+      <div>
+        <div class="t">${escapeHtml(cat)}</div>
+        <div class="d">${escapeHtml(desc)}</div>
+      </div>`;
+    el.appendChild(item);
+  }
+}
+
+function renderGroups(){
+  const host = document.getElementById('groups');
+  host.innerHTML='';
+  const groups = groupTasks(state.tasks);
+  for(const [cat, arr] of groups){
+    const acc = document.createElement('div');
+    acc.className = 'accordion' + (state.groupsOpen.has(cat)?' open':'');
+    const head = document.createElement('div');
+    head.className='accHead';
+    head.innerHTML = `<b>${escapeHtml(cat)}</b><span>${arr.length} משימות</span>`;
+    head.onclick = () => {
+      if(state.groupsOpen.has(cat)) state.groupsOpen.delete(cat); else state.groupsOpen.add(cat);
+      acc.classList.toggle('open');
+    };
+    const body = document.createElement('div');
+    body.className='accBody';
+    body.appendChild(renderTasksTable(arr));
+    acc.appendChild(head);
+    acc.appendChild(body);
+    host.appendChild(acc);
+  }
+}
+
+function renderTasksTable(tasks){
+  const wrap = document.createElement('div');
+  wrap.style.maxHeight='280px';
+  wrap.style.overflow='auto';
+
+  const table = document.createElement('table');
+  table.className='tasksTable';
+  table.innerHTML = `<thead><tr>
+    <th style="width:70px">מזהה</th>
+    <th style="min-width:220px">שם</th>
+    <th style="width:140px">אחראי</th>
+    <th style="width:120px">התחלה</th>
+    <th style="width:120px">סיום</th>
+    <th style="width:120px">תלויות</th>
+    <th style="min-width:200px">הערות</th>
+  </tr></thead>`;
+  const tb = document.createElement('tbody');
+
+  function fmtDate(d){
+    if(!d) return '';
+    const dd=String(d.getUTCDate()).padStart(2,'0');
+    const mm=String(d.getUTCMonth()+1).padStart(2,'0');
+    const yy=String(d.getUTCFullYear()).slice(-2);
+    return `${dd}.${mm}.${yy}`;
+  }
+
+  for(const t of tasks){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input value="${escapeAttr(t.id)}" disabled></td>
+      <td><input value="${escapeAttr(t.name)}" data-k="name"></td>
+      <td><input value="${escapeAttr(t.owner||'')}" data-k="owner"></td>
+      <td><input value="${escapeAttr(fmtDate(t.start))}" data-k="start" placeholder="DD.MM.YY"></td>
+      <td><input value="${escapeAttr(fmtDate(t.end))}" data-k="end" placeholder="DD.MM.YY"></td>
+      <td><input value="${escapeAttr(t.deps||'')}" data-k="deps" placeholder="1,2,3"></td>
+      <td><input value="${escapeAttr(t.notes||'')}" data-k="notes"></td>
+    `;
+    tr.querySelectorAll('input[data-k]').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        const k = inp.getAttribute('data-k');
+        const v = inp.value;
+        applyEdit(t.id, k, v);
+      });
+    });
+    tb.appendChild(tr);
+  }
+
+  table.appendChild(tb);
+  wrap.appendChild(table);
+  return wrap;
+}
+
+function applyEdit(taskId, key, value){
+  const t = state.tasks.find(x=>x.id===taskId);
+  if(!t) return;
+  if(key === 'start' || key === 'end'){
+    const parsed = parseInlineDate(value);
+    t[key] = parsed;
+  } else {
+    t[key] = value;
+  }
+  log(`עודכן ${taskId}: ${key} = ${value}`);
+  renderGantt(); // refresh bars
+  safeStorageSet('gantt_tasks_cache_v17', JSON.stringify(state.tasks.map(serializeTask)));
+}
+
+function parseInlineDate(s){
+  s=(s||'').trim();
+  if(!s) return null;
+  const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
+  if(m){
+    let d=+m[1], mo=+m[2], y=+m[3];
+    if(y<100) y=2000+y;
+    return new Date(Date.UTC(y, mo-1, d));
+  }
+  return null;
+}
+
+function serializeTask(t){
+  return {
+    id:t.id, name:t.name, cat:t.cat, owner:t.owner,
+    start: t.start ? t.start.toISOString() : null,
+    end: t.end ? t.end.toISOString() : null,
+    dur:t.dur, deps:t.deps, notes:t.notes, startOffset:t.startOffset, milestone:t.milestone
+  };
+}
+function reviveTasks(arr){
+  return (arr||[]).map(o=>({
+    ...o,
+    start: o.start ? new Date(o.start) : null,
+    end: o.end ? new Date(o.end) : null
+  }));
+}
+
+function renderGantt(){
+  const host = document.getElementById('gantt');
+  host.innerHTML='';
+  document.documentElement.style.setProperty('--pxDay', state.pxDay+'px');
+
+  const tasks = state.tasks.slice();
+
+  const {min, max} = dateRange(tasks);
+  const totalDays = Math.max(1, daysBetween(min, max) + 1);
+
+  // Header days
+  const header = document.createElement('div');
+  header.className='ganttHeader';
+  const days = document.createElement('div');
+  days.className='days';
+  for(let i=0;i<totalDays;i++){
+    const d = new Date(min.getTime() + i*86400000);
+    const dd=String(d.getUTCDate()).padStart(2,'0');
+    const mm=String(d.getUTCMonth()+1).padStart(2,'0');
+    const dayEl = document.createElement('div');
+    dayEl.className='day';
+    dayEl.style.flex = `0 0 ${state.pxDay}px`;
+    dayEl.textContent = `${dd}.${mm}`;
+    days.appendChild(dayEl);
+  }
+  header.appendChild(document.createElement('div')); // spacer to align? we'll build with rows instead
+  // We'll render header separately using a gRow-like layout for alignment
+  const headerRow = document.createElement('div');
+  headerRow.className='gRow';
+  const headerLeft = document.createElement('div');
+  headerLeft.className='gLeft';
+  headerLeft.innerHTML = `<div class="name">שם משימה</div><div class="meta">אחראי • קטגוריה • תלויות</div>`;
+  const headerRight = document.createElement('div');
+  headerRight.className='gRight';
+  headerRight.style.height='32px';
+  headerRight.appendChild(days);
+  headerRow.appendChild(headerLeft);
+  headerRow.appendChild(headerRight);
+  host.appendChild(headerRow);
+
+  // rows
+  for(const t of tasks){
+    const row = document.createElement('div');
+    row.className='gRow';
+
+    const left = document.createElement('div');
+    left.className='gLeft';
+    left.innerHTML = `<div class="name">${escapeHtml(t.name)}</div>
+      <div class="meta">${escapeHtml(t.owner||'')} • ${escapeHtml((t.cat||'').trim())}${t.deps?(' • תלוי: '+escapeHtml(t.deps)) : ''}</div>`;
+
+    const right = document.createElement('div');
+    right.className='gRight';
+    right.style.height='38px';
+
+    // gridlines
+    for(let i=0;i<totalDays;i++){
+      const gl = document.createElement('div');
+      gl.className='gridline';
+      gl.style.left = (i*state.pxDay) + 'px';
+      right.appendChild(gl);
+    }
+
+    // bar
+    if(t.start && (t.end || (!isNaN(t.dur) && t.dur>0))){
+      const end = t.end ? t.end : new Date(t.start.getTime() + (t.dur-1)*86400000);
+      const offset = Math.max(0, daysBetween(min, t.start));
+      const len = Math.max(1, daysBetween(t.start, end)+1);
+      const bar = document.createElement('div');
+      const col = colorFromString((t.cat||'ללא קטגוריה'));
+      bar.className='bar' + (isTruthy(t.milestone)?' milestone':'');
+      if(isTruthy(t.milestone)){
+        bar.style.background = col;
+        bar.style.left = (offset*state.pxDay + 6) + 'px';
+        bar.title = t.name;
+      } else {
+        bar.style.background = col;
+        bar.style.left = (offset*state.pxDay + 2) + 'px';
+        bar.style.width = (len*state.pxDay - 4) + 'px';
+        bar.textContent = t.id;
+        bar.title = `${t.id} – ${t.name}`;
+      }
+      right.appendChild(bar);
+    }
+
+    row.appendChild(left);
+    row.appendChild(right);
+    host.appendChild(row);
+  }
+
+  setStatus(`טווח: ${fmtRange(min,max)} | ימים: ${totalDays} | px/day: ${state.pxDay}`);
+}
+
+function fmtRange(a,b){
+  const f=(d)=>{
+    const dd=String(d.getUTCDate()).padStart(2,'0');
+    const mm=String(d.getUTCMonth()+1).padStart(2,'0');
+    const yy=String(d.getUTCFullYear()).slice(-2);
+    return `${dd}.${mm}.${yy}`;
+  };
+  return `${f(a)} - ${f(b)}`;
+}
+
+function isTruthy(v){
+  const s=(v||'').toString().trim().toLowerCase();
+  return s==='1'||s==='true'||s==='yes'||s==='y'||s==='כן';
+}
+
+function renderAll(){
+  renderLegend();
+  renderGroups();
+  renderGantt();
+  setHeaderStats();
+}
+
+async function loadFromGitHub(){
+  setStatus('טוען…');
+  log('שולח בקשה ל-GitHub');
+  const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.path}?ref=${CONFIG.branch}`;
+  try{
+    const res = await fetch(url, {headers:{'Accept':'application/vnd.github+json'}});
+    log('תגובת GitHub: ' + res.status);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+
+    const data = await res.json();
+    if(!data || !data.content) throw new Error('תוכן קובץ חסר בתגובה');
+
+    const csv = base64ToUtf8(data.content);
+    log('קובץ CSV נטען: ' + csv.length + ' תווים');
+
+    const tasks = parseCSV(csv);
+    log('פענוח CSV: ' + tasks.length + ' משימות נמצאו');
+
+    state.tasks = tasks;
+    safeStorageSet('gantt_tasks_cache_v17', JSON.stringify(tasks.map(serializeTask)));
+    document.getElementById('ghState').textContent='GitHub: מחובר';
+    renderAll();
+    setStatus('נטען בהצלחה');
+  }catch(e){
+    setStatus('שגיאה');
+    log('שגיאה: ' + e.message);
+  }
+}
+
+// ===== Helpers (escape) =====
+function escapeHtml(s){
+  return (s??'').toString().replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function escapeAttr(s){
+  return escapeHtml(s).replace(/\\n/g,' ');
+}
+
+// ===== Boot =====
+(function init(){
+  document.documentElement.style.setProperty('--pxDay', state.pxDay+'px');
+  // load cache
+  const cached = safeStorageGet('gantt_tasks_cache_v17');
+  if(cached){
+    try{
+      state.tasks = reviveTasks(JSON.parse(cached));
+      log('נטענו ' + state.tasks.length + ' משימות מהזיכרון המקומי');
+      renderAll();
+    }catch(_){ /* ignore */ }
+  }
+  setHeaderStats();
+  setStatus('מוכן');
+})();
 </script>
+
 </body>
 </html>
