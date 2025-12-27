@@ -2027,7 +2027,102 @@
     }
 
     // ===== CSV PARSING AND GENERATION =====
-    function parseCSVWithHebrewHeaders(csvString) {
+   function parseCSVWithHebrewHeaders(csvString) {
+    if (!csvString || csvString.trim().length === 0) {
+        logDebug("שגיאה: מחרוזת ה-CSV ריקה");
+        return [];
+    }
+    
+    // ניקוי תווים בלתי נראים ותו ה-BOM של אקסל
+    const cleanCsv = csvString.replace(/^\uFEFF/, '').trim();
+    const lines = cleanCsv.split(/\r?\n/);
+    
+    if (lines.length < 2) {
+        logDebug("שגיאה: הקובץ מכיל פחות מ-2 שורות");
+        return [];
+    }
+
+    // פונקציה חכמה לפירוק שורה שתומכת במירכאות ופסיקים בתוך טקסט
+    function splitCSVLine(line) {
+        const result = [];
+        let curVal = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            const nextChar = line[i + 1];
+            if (char === '"' && inQuotes && nextChar === '"') {
+                curVal += '"'; i++; 
+            } else if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(curVal.trim());
+                curVal = '';
+            } else {
+                curVal += char;
+            }
+        }
+        result.push(curVal.trim());
+        return result;
+    }
+
+    const headers = splitCSVLine(lines[0]);
+    logDebug(`כותרות שזוהו: ${headers.join(' | ')}`);
+
+    // מיפוי גמיש יותר - מחפש חלקי מילים כדי לא להיכשל על רווחים
+    const findCol = (terms) => headers.findIndex(h => terms.some(t => h.includes(t)));
+
+    const colMap = {
+        id: findCol(['מזהה', 'ID']),
+        phase: findCol(['קטגוריה', 'שלב', 'Phase']),
+        name: findCol(['שם משימה', 'Task', 'Name']),
+        owner: findCol(['אחראי', 'Owner']),
+        start: findCol(['תאריך התחלה', 'Start']),
+        end: findCol(['תאריך סיום', 'End']),
+        duration: findCol(['משך', 'Duration']),
+        deps: findCol(['תלויות', 'Predecessors']),
+        notes: findCol(['הערות', 'Notes']),
+        offset: findCol(['startOffset']),
+        milestone: findCol(['milestone', 'אבן דרך'])
+    };
+
+    // בדיקה אם העמודות הקריטיות נמצאו
+    if (colMap.id === -1 || colMap.name === -1) {
+        logDebug("שגיאה: לא נמצאו עמודות חובה (מזהה או שם משימה)");
+        return [];
+    }
+
+    const tasks = [];
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        const cols = splitCSVLine(line);
+        if (cols.length < 2) continue;
+
+        const id = cols[colMap.id];
+        const name = cols[colMap.name];
+
+        if (!id || !name) continue;
+
+        tasks.push({
+            id: id.toString().replace(/['"]/g, ''),
+            phase: cols[colMap.phase] || 'כללי',
+            name: name.replace(/^"|"$/g, ''), // ניקוי מירכאות עוטפות
+            owner: cols[colMap.owner] || '',
+            start: cols[colMap.start] || '',
+            end: cols[colMap.end] || '',
+            duration: parseInt(cols[colMap.duration]) || 1,
+            dependencies: cols[colMap.deps] ? cols[colMap.deps].toString().split(/[,;]/).map(d => d.trim()).filter(d => d) : [],
+            notes: cols[colMap.notes] || '',
+            startOffset: parseInt(cols[colMap.offset]) || 0,
+            milestone: String(cols[colMap.milestone]).toLowerCase() === 'true' || cols[colMap.milestone] === '1',
+            status: 'not-started'
+        });
+    }
+
+    logDebug(`פענוח הושלם: ${tasks.length} משימות נוצרו`);
+    return tasks;
+}
     if (!csvString) return [];
     
     // ניקוי תווים בלתי נראים בתחילת הקובץ (BOM)
