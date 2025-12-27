@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Gantt CERT Professional - סינכרון עם GitHub</title>
 <!-- Polyfill for older browsers -->
-<script src="https://polyfill.io/v3/polyfill.min.js?features=Array.from,Array.prototype.includes,Object.assign,String.prototype.includes,String.prototype.startsWith,Promise,fetch"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -1793,24 +1792,7 @@
       }
     }
 
-    
-// המרה בטוחה של Base64 ל-UTF8 (כדי שעברית לא תיהרס ב-atob)
-function base64ToUtf8(base64) {
-  const binary = atob(base64);
-  // TextDecoder קיים בכל הדפדפנים המודרניים; נותן עברית תקינה
-  if (typeof TextDecoder !== 'undefined') {
-    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
-    return new TextDecoder('utf-8').decode(bytes);
-  }
-  // fallback ישן
-  try {
-    return decodeURIComponent(escape(binary));
-  } catch (e) {
-    return binary;
-  }
-}
-
-async function loadFromGitHub() {
+    async function loadFromGitHub() {
       if (!githubSettings || !githubSettings.token) {
         showToast('נא להגדיר את פרטי GitHub תחילה', 'warning');
         document.getElementById('settingsBtn').click();
@@ -1848,15 +1830,33 @@ async function loadFromGitHub() {
         const data = await response.json();
         GH_SHA = data.sha;
         
-        // פענוח תוכן (UTF-8 בטוח לעברית)
-        const base64Content = data.content.replace(/\s/g, '');
-        let content = base64ToUtf8(base64Content);
+        // פענוח תוכן (Base64 -> UTF-8) בצורה בטוחה (חשוב לעברית)
+        const base64Content = (data.content || '').replace(/\s/g, '');
 
-// הסר BOM אם קיים
-        if (content.charCodeAt(0) === 0xFEFF) {
+        function base64ToUtf8(b64) {
+          const bin = atob(b64);
+          const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+          if (typeof TextDecoder !== 'undefined') {
+            return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+          }
+          let s = '';
+          for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+          return decodeURIComponent(escape(s));
+        }
+
+        let content = '';
+        try {
+          content = base64ToUtf8(base64Content);
+        } catch (e) {
+          try { content = decodeURIComponent(escape(atob(base64Content))); }
+          catch (_) { content = atob(base64Content); }
+        }
+
+        // הסר BOM אם קיים
+        if (content && content.charCodeAt(0) === 0xFEFF) {
           content = content.substring(1);
         }
-        
+
         logDebug(`קובץ CSV נטען: ${content.length} תווים`);
         
         // פענוח CSV
@@ -2075,28 +2075,44 @@ async function loadFromGitHub() {
         return result;
     }
 
-    const headers = splitCSVLine(lines[0]);
-    logDebug(`כותרות שזוהו: ${headers.join(' | ')}`);
+    const rawHeaders = splitCSVLine(lines[0]);
 
-    // מיפוי גמיש יותר - מחפש חלקי מילים כדי לא להיכשל על רווחים
-    const norm = (s) => String(s||'').replace(/^\uFEFF/, '').replace(/["']/g,'').trim();
-     const findCol = (terms) => headers.findIndex(h => terms.some(t => norm(h).includes(t)));
+    // נירמול כותרות כדי להתמודד עם: מירכאות, BOM, רווחים, שינויי כתיב, עברית/אנגלית
+    const normalizeHeader = (h) => (h ?? '')
+        .toString()
+        .replace(/^\uFEFF/, '')
+        .replace(/[\u200E\u200F\u202A-\u202E]/g, '') // סימני RTL/LTR נסתרים
+        .replace(/^"|"$/g, '')
+        .trim()
+        .toLowerCase();
+
+    const headers = rawHeaders.map(normalizeHeader);
+    logDebug(`כותרות שזוהו (מנורמל): ${headers.join(' | ')}`);
+
+    const findCol = (terms) => {
+      const tnorm = terms.map(t => normalizeHeader(t));
+      return headers.findIndex(h => tnorm.some(t => t && h.includes(t)));
+    };
 
     const colMap = {
-        id: findCol(['מזהה', 'ID']),
-        phase: findCol(['קטגוריה', 'שלב', 'Phase']),
-        name: findCol(['שם משימה', 'Task', 'Name']),
-        owner: findCol(['אחראי', 'Owner']),
-        start: findCol(['תאריך התחלה', 'Start']),
-        end: findCol(['תאריך סיום', 'End']),
-        duration: findCol(['משך', 'Duration']),
-        deps: findCol(['תלויות', 'Predecessors']),
-        notes: findCol(['הערות', 'Notes']),
-        offset: findCol(['startOffset']),
+        id: findCol(['מזהה', 'id']),
+        phase: findCol(['קטגוריה', 'שלב', 'phase']),
+        name: findCol(['שם משימה', 'task', 'name']),
+        owner: findCol(['אחראי', 'owner']),
+        start: findCol(['תאריך התחלה', 'start']),
+        end: findCol(['תאריך סיום', 'end']),
+        duration: findCol(['משך', 'duration']),
+        deps: findCol(['תלויות', 'predecessors', 'dependencies']),
+        notes: findCol(['הערות', 'notes']),
+        offset: findCol(['startoffset', 'offset']),
         milestone: findCol(['milestone', 'אבן דרך'])
     };
 
-    // בדיקה אם העמודות הקריטיות נמצאו
+    // תצוגת דיבאג אם אין התאמה
+    if (colMap.id === -1 || colMap.name === -1) {
+        logDebug(`❌ מיפוי עמודות נכשל. colMap.id=${colMap.id} colMap.name=${colMap.name}`);
+    }
+// בדיקה אם העמודות הקריטיות נמצאו
     if (colMap.id === -1 || colMap.name === -1) {
         logDebug("שגיאה: לא נמצאו עמודות חובה (מזהה או שם משימה)");
         return [];
