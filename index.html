@@ -3,20 +3,17 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Gantt – Ghana Energy CERT (Drag & Drop) + Import/Export + Charts</title>
+<title>Gantt – Ghana Energy CERT (Drag & Drop) + Import/Export + GitHub</title>
 <style>
-  /* ===== Version 17 ===== */
+  /* ===== Version 18 ===== */
   body{
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-    margin:0;
-    background:#f6f7fb;
-    color:#111827;
+    margin:0;background:#f6f7fb;color:#111827;
     overflow:auto;
   }
 
-  /* Force scrollbars to appear (where supported) */
+  /* Always show scrollbars when possible */
   *{ scrollbar-gutter: stable both-edges; }
-  /* WebKit */
   ::-webkit-scrollbar{ width:12px; height:12px; }
   ::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:999px; border:3px solid #f6f7fb; }
   ::-webkit-scrollbar-track{ background:#f6f7fb; }
@@ -24,41 +21,27 @@
   header{padding:16px 20px;background:#111827;color:#fff}
   header h1{margin:0;font-size:18px;font-weight:900;direction:rtl;text-align:right}
   header .meta{margin-top:6px;font-size:13px;opacity:.9;direction:rtl;text-align:right;line-height:1.35}
+  .pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-size:12px}
 
-  .wrap{
-    padding:16px 20px;
-    overflow:auto; /* page area can scroll too */
-  }
-
+  .wrap{padding:16px 20px; overflow:auto;}
   .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-  .controls input,.controls select,.controls button{padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;background:#fff;font-size:14px}
+  .controls input,.controls select,.controls button{
+    padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;background:#fff;font-size:14px
+  }
   .controls button{cursor:pointer}
   .controls .btn-primary{background:#111827;color:#fff;border-color:#111827}
   .controls .btn-ghost{background:#fff;color:#111827}
+  .controls .btn-warn{background:#fff7ed;color:#9a3412;border-color:#fed7aa}
+  .controls .btn-ok{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
 
   .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 
-  /* Grid with fixed working height => scrollbars inside panes */
-  .grid{
-    display:grid;
-    grid-template-columns: 540px 1fr;
-  }
+  /* Fixed work area to force internal scrollbars */
+  .workArea{ height: min(62vh, 680px); }
 
-  /* Main scroll area height (adjustable) */
-  .workArea{
-    height: min(62vh, 680px); /* gives internal scrollbars */
-  }
-
-  .left{
-    border-right:1px solid #e5e7eb;
-    overflow:auto;           /* scrollbar */
-    height:100%;
-  }
-
-  .right{
-    overflow:auto;           /* vertical + horizontal scrollbars */
-    height:100%;
-  }
+  .grid{display:grid;grid-template-columns: 540px 1fr;}
+  .left{border-right:1px solid #e5e7eb; overflow:auto; height:100%;}
+  .right{overflow:auto; height:100%;}
 
   .row{display:flex;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid #f1f5f9}
   .row:nth-child(odd){background:#fafafa}
@@ -75,15 +58,12 @@
   .bar.dragging{cursor:grabbing;opacity:.9}
   .bar .label{position:absolute;left:10px;right:10px;top:2px;font-size:10px;line-height:1;color:#fff;opacity:.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
   .bar .deps{position:absolute;left:10px;right:10px;bottom:2px;font-size:10px;line-height:1;color:#fff;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-
   .handle{position:absolute;top:0;width:10px;height:20px;opacity:.0;}
   .bar:hover .handle{opacity:.35;}
   .handle.left{left:0;border-top-left-radius:10px;border-bottom-left-radius:10px;background:#0b3ea8;cursor:ew-resize}
   .handle.right{right:0;border-top-right-radius:10px;border-bottom-right-radius:10px;background:#0b3ea8;cursor:ew-resize}
 
   .hint{padding:10px 12px;font-size:12px;color:#374151;direction:rtl;text-align:right}
-  .pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-size:12px}
-
   #legend .lg-item{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:999px;background:#fff;font-size:12px}
   #legend .sw{width:12px;height:12px;border-radius:4px}
   .dep-layer{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
@@ -102,17 +82,64 @@
   .chart-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;direction:ltr}
   .chart-legend .it{display:flex;gap:6px;align-items:center;font-size:12px;color:#374151}
   .chart-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
-  .importBox{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .importBox input[type=file]{padding:8px 10px}
+
+  /* Modal */
+  .modal-backdrop{
+    position:fixed; inset:0;
+    background:rgba(17,24,39,.55);
+    display:none; align-items:center; justify-content:center;
+    padding:16px; z-index:50;
+  }
+  .modal{
+    width:min(820px, 100%);
+    background:#fff; border-radius:16px;
+    border:1px solid #e5e7eb;
+    box-shadow:0 20px 70px rgba(0,0,0,.25);
+    overflow:auto;
+    max-height:85vh;
+  }
+  .modal-hd{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px; border-bottom:1px solid #e5e7eb;
+  }
+  .modal-hd h2{margin:0;font-size:16px;font-weight:900}
+  .modal-bd{padding:14px 16px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .fg{display:flex;flex-direction:column;gap:6px}
+  .fg label{font-size:12px;color:#374151; font-weight:700}
+  .fg input, .fg select{
+    padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;font-size:14px
+  }
+  .modal-ft{
+    display:flex; gap:10px; flex-wrap:wrap;
+    padding:14px 16px; border-top:1px solid #e5e7eb;
+    justify-content:flex-end;
+  }
+  .statusBox{
+    margin-top:10px;
+    padding:10px 12px;
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    background:#f8fafc;
+    font-size:12px;
+    white-space:pre-wrap;
+    direction:ltr;
+    text-align:left;
+    overflow:auto;
+    max-height:160px;
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>AMIR DAVIDI TECHNOLOGIES – גאנט פרויקט Ghana Energy CERT (Drag & Drop) <span class="pill">Version 17</span></h1>
+  <h1>
+    AMIR DAVIDI TECHNOLOGIES – גאנט פרויקט Ghana Energy CERT (Drag & Drop)
+    <span class="pill">Version 18</span>
+  </h1>
   <div class="meta">
     ✅ גרירה מזיזה משימה | ✅ גרירת קצוות משנה Duration | ✅ חצים לתלויות<br/>
-    ✅ Export CSV (כולל כל שדות היצירה) | ✅ Import CSV משנה מיד את כל הנתונים | ✅ נשמר מקומית בדפדפן
-    <span class="pill">UTF-8 BOM לאקסל (עברית תקינה)</span>
+    ✅ Import/Export CSV | ✅ Load/Save ל-GitHub (tasks.csv) דרך Settings
+    <span class="pill">UTF-8 BOM</span>
   </div>
 </header>
 
@@ -129,8 +156,17 @@
     <div id="legend" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"></div>
 
     <button class="btn-primary" id="exportCsv">Export CSV</button>
+    <button class="btn-ghost" id="settingsBtn">Settings (GitHub)</button>
 
-    <div class="importBox">
+    <!-- SINGLE Git/Utility bar (not duplicated) -->
+    <button class="btn-ok" id="loadRepo" title="טען tasks.csv מה-GitHub (Public בלי טוקן דרך RAW; Private דרך API)">Load from GIT (tasks.csv)</button>
+    <button class="btn-primary" id="saveRepo" title="שמור tasks.csv חזרה ל-GitHub (דורש Token עם הרשאות)">Save to GIT (tasks.csv)</button>
+    <button class="btn-ghost" id="downloadTemplate" title="הורד תבנית CSV מלאה לייבוא">Download CSV Template</button>
+    <button class="btn-warn" id="clearLocal" title="מוחק שינויים מקומיים ומחזיר למצב טעינה מה-GIT">Clear Local Cache</button>
+
+    <div style="flex:1"></div>
+
+    <div class="importBox" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <input id="importFile" type="file" accept=".csv,text/csv"/>
       <button class="btn-ghost" id="importBtn">Import CSV</button>
     </div>
@@ -159,36 +195,108 @@
   </div>
 
   <div class="card">
-    <!-- internal scroll panes -->
     <div class="grid workArea">
       <div class="left" id="left"></div>
-      <div class="right">
+      <div class="right" id="rightPane">
         <div class="timeline" id="timeline"></div>
         <div class="bar-area" id="bars"></div>
       </div>
     </div>
     <div class="hint">
-      טיפ: לדיוק גבוה העבר ל-Zoom "יום". דאבל-קליק על בר מציג פרטים. לאחר Import/Drag אפשר Export CSV ולהדביק חזרה לאקסל.
+      טיפ: לדיוק גבוה העבר ל-Zoom "יום". דאבל-קליק על בר מציג פרטים. Import/Drag נשמר מקומית. Save to GIT כותב ל-tasks.csv לפי Settings.
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-backdrop" id="modalBg" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal">
+    <div class="modal-hd">
+      <h2>GitHub Settings</h2>
+      <button class="btn-ghost" id="closeSettings">סגור</button>
+    </div>
+    <div class="modal-bd">
+      <div class="form-grid">
+        <div class="fg">
+          <label>Owner / Org</label>
+          <input id="ghOwner" placeholder="amird1976"/>
+        </div>
+        <div class="fg">
+          <label>Repository</label>
+          <input id="ghRepo" placeholder="GANA_PM"/>
+        </div>
+        <div class="fg">
+          <label>Branch</label>
+          <input id="ghBranch" placeholder="main"/>
+        </div>
+        <div class="fg">
+          <label>Path (CSV file)</label>
+          <input id="ghPath" placeholder="tasks.csv"/>
+        </div>
+        <div class="fg" style="grid-column:1 / -1">
+          <label>Personal Access Token (classic/fine-grained) – נשמר רק בדפדפן שלך (localStorage)</label>
+          <input id="ghToken" placeholder="ghp_... / github_pat_..." autocomplete="off" spellcheck="false"/>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn-primary" id="saveSettings">שמור Settings</button>
+        <button class="btn-ghost" id="testLoadRaw">Test RAW Load (Public)</button>
+        <button class="btn-ghost" id="testApi">Test API (requires token)</button>
+        <span class="pill" id="cfgHint">—</span>
+      </div>
+
+      <div class="statusBox" id="statusBox">Status log…</div>
+
+      <div class="hint" style="margin-top:10px">
+        הערה: Load ציבורי עובד גם בלי Token דרך raw.githubusercontent.com. Save תמיד דורש Token עם הרשאות לכתוב לקובץ.
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-warn" id="forgetToken">מחק Token מהמכשיר</button>
+      <button class="btn-ghost" id="closeSettings2">סגור</button>
     </div>
   </div>
 </div>
 
 <script>
+/* =========================
+   Version 18 – GitHub ready
+   ========================= */
+
 const MS_DAY = 86400000;
 const MIN_START = new Date("2026-01-05");
-const MAX_END = new Date("2026-06-10");
+const MAX_END   = new Date("2026-06-10");
 
+/* Demo base; you replace with full list or load from Git */
 const BASE = [
-  {"id":"1","phase":"1. Management","name":"פתיחת פרויקט וניהול (Phase 1)","owner":"צוות יעוץ","start":"2026-01-05","end":"2026-02-04","startOffset":0,"duration":30,"deps":"","milestone":false,"notes":""},
-  {"id":"2","phase":"1.1 Admin","name":"פגישת קיק-אוף והתנעת צוות היגוי","owner":"צוות יעוץ","start":"2026-01-05","end":"2026-01-07","startOffset":0,"duration":2,"deps":"","milestone":true,"notes":"דוגמה: סמן milestone=true כדי לקבל יהלום"},
-  {"id":"3","phase":"1.1 Admin","name":"הקמת משרד PMO פיזי באקרה (Ghana)","owner":"Local Ops","start":"2026-01-07","end":"2026-01-21","startOffset":2,"duration":14,"deps":"2","milestone":false,"notes":""},
-  {"id":"4","phase":"2. Design","name":"CDR - תכנון הנדסי מפורט (Design Phase)","owner":"Engineering","start":"2026-01-05","end":"2026-03-06","startOffset":0,"duration":60,"deps":"","milestone":false,"notes":""}
+  {"id":"1","phase":"1. Management","name":"פתיחת פרויקט וניהול (Phase 1)","owner":"צוות יעוץ","startOffset":0,"duration":30,"deps":"","milestone":false,"notes":""},
+  {"id":"2","phase":"1.1 Admin","name":"פגישת קיק-אוף והתנעת צוות היגוי","owner":"צוות יעוץ","startOffset":0,"duration":2,"deps":"","milestone":true,"notes":"דוגמה: סמן milestone=true כדי לקבל יהלום"},
+  {"id":"3","phase":"1.1 Admin","name":"הקמת משרד PMO פיזי באקרה (Ghana)","owner":"Local Ops","startOffset":2,"duration":14,"deps":"2","milestone":false,"notes":""},
+  {"id":"4","phase":"2. Design","name":"CDR - תכנון הנדסי מפורט (Design Phase)","owner":"Engineering","startOffset":0,"duration":60,"deps":"","milestone":false,"notes":""}
 ];
 
 let ALL = BASE.map(t => ({...t}));
-const STORE_KEY = "gantt_tasks_v17_edits";
-const STORE_KEY_CSV = "gantt_tasks_v17_csv_snapshot";
 
+/* Local storage keys */
+const STORE_KEY      = "gantt_tasks_v18_edits";
+const STORE_KEY_CSV  = "gantt_tasks_v18_csv_snapshot";
+const STORE_GH_CFG   = "gantt_github_cfg_v18";
+
+/* ---------- Helpers ---------- */
+function daysBetween(a,b){ return Math.round((b-a)/MS_DAY); }
+function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+function fmt(d){
+  const yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+function calcDatesFromOffsets(t){
+  const s = new Date(MIN_START.getTime() + (Number(t.startOffset||0))*MS_DAY);
+  const e = new Date(s.getTime() + Math.max(1,Number(t.duration||1))*MS_DAY);
+  t.start = fmt(s); t.end = fmt(e);
+}
+
+/* ---------- Category coloring ---------- */
 function categoryOf(t){
   const p = (t.phase||"").trim();
   if (!p) return "Other";
@@ -212,34 +320,37 @@ function depsLabel(t){
   return d.length > 30 ? (d.slice(0,30) + "…") : d;
 }
 
+/* ---------- Local edits ---------- */
 function loadEdits() {
   try { const raw = localStorage.getItem(STORE_KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; }
 }
 function saveEdits(edits) { try { localStorage.setItem(STORE_KEY, JSON.stringify(edits)); } catch(e){} }
-
-function daysBetween(a,b){ return Math.round((b-a)/MS_DAY); }
-function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
-function fmt(d){
-  const yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
-  return `${yyyy}-${mm}-${dd}`;
+function persistOne(t){
+  const edits = loadEdits() || {};
+  edits[t.id] = {
+    id:String(t.id),
+    phase:t.phase||"",
+    name:t.name||"",
+    owner:t.owner||"",
+    startOffset:Number(t.startOffset||0),
+    duration:Number(t.duration||1),
+    deps:t.deps||"",
+    milestone: !!t.milestone,
+    notes: t.notes||"",
+    start:t.start, end:t.end
+  };
+  saveEdits(edits);
 }
-function calcDatesFromOffsets(t){
-  const s = new Date(MIN_START.getTime() + (t.startOffset||0)*MS_DAY);
-  const e = new Date(s.getTime() + Math.max(1,(t.duration||1))*MS_DAY);
-  t.start = fmt(s); t.end = fmt(e);
-}
+function findTask(id){ return ALL.find(x=>String(x.id)===String(id)); }
 
-// Apply local edits
+/* Apply stored edits to BASE */
 (function applyLocal(){
   const edits = loadEdits(); if (!edits) return;
-  ALL = ALL.map(t => {
-    const e = edits[t.id]; if (!e) return t;
-    return {...t, ...e};
-  });
+  ALL = ALL.map(t => edits[t.id] ? ({...t, ...edits[t.id]}) : t);
 })();
-ALL.forEach(t => calcDatesFromOffsets(t));
+ALL.forEach(calcDatesFromOffsets);
 
-// Owner filter init
+/* ---------- Owner filter ---------- */
 const ownerSel = document.getElementById('ownerFilter');
 function rebuildOwnerOptions(tasks){
   ownerSel.innerHTML = '<option value="">כל ה-Owners</option>';
@@ -249,7 +360,7 @@ function rebuildOwnerOptions(tasks){
 }
 rebuildOwnerOptions(ALL);
 
-// Zoom
+/* ---------- Zoom / ticks ---------- */
 function pxPerDayForZoom(){ const z=document.getElementById('zoom').value; return (z==='day')?18:(z==='week'?7:2.5); }
 function buildTicks(pxPerDay){
   const tl=document.getElementById('timeline'); tl.innerHTML='';
@@ -269,25 +380,7 @@ function buildTicks(pxPerDay){
   tl.appendChild(ticks);
 }
 
-function persistOne(t){
-  const edits = loadEdits() || {};
-  edits[t.id] = {
-    id:String(t.id),
-    phase:t.phase||"",
-    name:t.name||"",
-    owner:t.owner||"",
-    startOffset:Number(t.startOffset||0),
-    duration:Number(t.duration||1),
-    deps:t.deps||"",
-    milestone: !!t.milestone,
-    notes: t.notes||"",
-    start:t.start, end:t.end
-  };
-  saveEdits(edits);
-}
-function findTask(id){ return ALL.find(x=>String(x.id)===String(id)); }
-
-// Drag
+/* ---------- Drag ---------- */
 function attachDrag(barEl, pxPerDay){
   let mode="move", startX=0, origOffset=0, origDuration=0;
 
@@ -339,7 +432,7 @@ function attachDrag(barEl, pxPerDay){
   barEl.addEventListener('pointercancel', onPointerUp);
 }
 
-// Milestone shape
+/* ---------- Milestone look ---------- */
 function applyMilestoneStyle(barEl, isMilestone){
   if (!isMilestone) {
     barEl.style.borderRadius = "10px";
@@ -350,7 +443,7 @@ function applyMilestoneStyle(barEl, isMilestone){
   barEl.style.transform = "rotate(45deg)";
 }
 
-// Render
+/* ---------- Render ---------- */
 function render(){
   const q=(document.getElementById('q').value||'').toLowerCase().trim();
   const ownerVal=(document.getElementById('ownerFilter').value||'').toLowerCase();
@@ -377,6 +470,7 @@ function render(){
     });
   }
 
+  // Left list
   const left=document.getElementById('left');
   left.innerHTML='';
   const h=document.createElement('div');
@@ -385,7 +479,7 @@ function render(){
   left.appendChild(h);
   list.forEach(t=>{
     const r=document.createElement('div'); r.className='row';
-    r.innerHTML = `<div class="meta">#${t.id}</div><div class="title">${t.name}</div><div class="meta">${t.owner||''}</div>`;
+    r.innerHTML = `<div class="meta">#${t.id}</div><div class="title">${escapeHtml(t.name)}</div><div class="meta">${escapeHtml(t.owner||'')}</div>`;
     left.appendChild(r);
   });
 
@@ -418,14 +512,12 @@ function render(){
     bar.dataset.id=t.id;
 
     const isMs = !!t.milestone;
-    const durPx = Math.max(1,t.duration)*pxPerDay;
+    const durPx = Math.max(1,Number(t.duration||1))*pxPerDay;
     const msSize = Math.max(10, Math.min(18, pxPerDay*2.2));
-    bar.style.left=(t.startOffset*pxPerDay)+'px';
+    bar.style.left=(Number(t.startOffset||0)*pxPerDay)+'px';
     bar.style.width = isMs ? (msSize+'px') : (durPx+'px');
 
-    const cat=categoryOf(t);
-    bar.style.background=colorForCategory(cat);
-
+    bar.style.background=colorForCategory(categoryOf(t));
     bar.title=`${t.name} (Start: ${t.start}, End: ${t.end})`;
     applyMilestoneStyle(bar, isMs);
 
@@ -456,7 +548,7 @@ function render(){
     bars.appendChild(row);
   });
 
-  // Draw dependency lines
+  // Draw dependency lines among visible
   const rowsCount=list.length;
   const svgHeight=rowsCount*34;
   svg.setAttribute('width', width);
@@ -465,8 +557,8 @@ function render(){
   Array.from(svg.querySelectorAll('path.dep')).forEach(p=>p.remove());
 
   const centerY = (i)=>(i*34+17);
-  const barEndX = (tt)=>((tt.startOffset + Math.max(1,tt.duration))*pxPerDay);
-  const barStartX = (tt)=>((tt.startOffset)*pxPerDay);
+  const barEndX = (tt)=>((Number(tt.startOffset||0) + Math.max(1,Number(tt.duration||1)))*pxPerDay);
+  const barStartX = (tt)=>((Number(tt.startOffset||0))*pxPerDay);
   const visibleById = new Map(list.map((tt,i)=>[String(tt.id), {t:tt,i}]));
 
   list.forEach((tt,i)=>{
@@ -491,8 +583,8 @@ function render(){
   updateCharts(list);
 }
 
-// CSV Export/Import
-function exportCSV(){
+/* ---------- CSV Export/Import ---------- */
+function exportCSVText(tasks){
   const header = ["id","phase","name","owner","startOffset","duration","start","end","deps","milestone","notes"];
   const rows = [header.join(",")];
   const esc = (v)=>{
@@ -500,16 +592,27 @@ function exportCSV(){
     if (s.includes('"')||s.includes(",")||s.includes("\n")||s.includes("\r")) return '"' + s.replace(/"/g,'""') + '"';
     return s;
   };
-  ALL.forEach(t=>{
+  tasks.forEach(t=>{
     rows.push([
-      esc(t.id), esc(t.phase), esc(t.name), esc(t.owner),
-      esc(t.startOffset), esc(t.duration), esc(t.start), esc(t.end),
-      esc(t.deps||""), esc(t.milestone?1:0), esc(t.notes||"")
+      esc(t.id),
+      esc(t.phase),
+      esc(t.name),
+      esc(t.owner),
+      esc(t.startOffset),
+      esc(t.duration),
+      esc(t.start||""),
+      esc(t.end||""),
+      esc(t.deps||""),
+      esc(t.milestone?1:0),
+      esc(t.notes||"")
     ].join(","));
   });
-
   const bom="\uFEFF";
-  const csvText = bom + rows.join("\r\n");
+  return bom + rows.join("\r\n");
+}
+function exportCSV(){
+  ALL.forEach(calcDatesFromOffsets);
+  const csvText = exportCSVText(ALL);
   const blob = new Blob([csvText], {type:"text/csv;charset=utf-8"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -518,6 +621,22 @@ function exportCSV(){
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 5000);
   try{ localStorage.setItem(STORE_KEY_CSV, csvText);}catch(_){}
+}
+
+function downloadTemplate(){
+  const sample = [
+    {id:"1", phase:"1. Management", name:"Example task", owner:"Owner", startOffset:0, duration:7, deps:"", milestone:false, notes:""},
+    {id:"2", phase:"1.1 Admin", name:"Milestone example", owner:"Owner", startOffset:7, duration:1, deps:"1", milestone:true, notes:""}
+  ];
+  sample.forEach(calcDatesFromOffsets);
+  const csvText = exportCSVText(sample);
+  const blob = new Blob([csvText], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url;
+  a.download="tasks_template.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
 }
 
 function parseCSV(text){
@@ -577,9 +696,9 @@ function coerceTask(row){
   t.phase = String(pick("phase","Phase","Phase/Section","קטגוריה/שלב") ?? "").trim();
   t.name  = String(pick("name","Task","Task Name","שם משימה") ?? "").trim();
   t.owner = String(pick("owner","Owner","אחראי") ?? "").trim();
-
   t.deps  = String(pick("deps","Dependencies","תלויות") ?? "").trim();
   t.notes = String(pick("notes","Notes","הערות") ?? "").trim();
+
   const msRaw = pick("milestone","Milestone","אבן דרך","אבן_דרך");
   t.milestone = (String(msRaw ?? "").toLowerCase()==="true" || String(msRaw ?? "").toLowerCase()==="yes" || String(msRaw ?? "")==="1");
 
@@ -587,14 +706,13 @@ function coerceTask(row){
   const du = pick("duration","Duration","Duration (days)","Duration Days","משך (ימים)");
   t.startOffset = Number(so ?? 0);
   t.duration = Number(du ?? 1);
-
   return t;
 }
 
 async function importCSVFromFile(file){
   const text = await file.text();
   const rows = parseCSV(text);
-  const tasks = rows.map(coerceTask).filter(Boolean).filter(t=>t.id);
+  const tasks = rows.map(coerceTask).filter(t=>t && t.id);
 
   if (!tasks.length){
     alert("לא נמצאו משימות ב-CSV. ודא שיש עמודות id/name/phase/owner/startOffset/duration וכו'.");
@@ -602,7 +720,7 @@ async function importCSVFromFile(file){
   }
 
   ALL = tasks.map(t=>({...t}));
-  ALL.forEach(t=>calcDatesFromOffsets(t));
+  ALL.forEach(calcDatesFromOffsets);
 
   const edits = {};
   ALL.forEach(t=>{
@@ -626,20 +744,51 @@ async function importCSVFromFile(file){
   alert(`✅ Import הושלם: נטענו ${ALL.length} משימות והגאנט עודכן מיד.`);
 }
 
+/* ---------- Clear / Reset ---------- */
+function clearLocalCache(){
+  localStorage.removeItem(STORE_KEY);
+  localStorage.removeItem(STORE_KEY_CSV);
+  // keep GitHub settings
+  ALL = BASE.map(t=>({...t}));
+  ALL.forEach(calcDatesFromOffsets);
+  rebuildOwnerOptions(ALL);
+  document.getElementById('q').value='';
+  document.getElementById('ownerFilter').value='';
+  render();
+  updateCharts();
+  alert("✅ נמחק Cache מקומי. חזרת למצב בסיס. עכשיו אפשר Load מה-GIT.");
+}
 function resetAll(){
   localStorage.removeItem(STORE_KEY);
   localStorage.removeItem(STORE_KEY_CSV);
+  localStorage.removeItem(STORE_GH_CFG);
   ALL = BASE.map(t=>({...t}));
-  ALL.forEach(t=>calcDatesFromOffsets(t));
+  ALL.forEach(calcDatesFromOffsets);
   rebuildOwnerOptions(ALL);
   document.getElementById('q').value='';
   document.getElementById('ownerFilter').value='';
   document.getElementById('zoom').value='week';
   render();
+  updateCharts();
+  alert("✅ איפוס מלא (כולל Settings).");
 }
 
-// Charts (same engine)
+/* ---------- Mini chart engine ---------- */
 function clearCanvas(ctx){ ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height); }
+
+if (!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+    r = Math.min(r, w/2, h/2);
+    this.beginPath();
+    this.moveTo(x+r,y);
+    this.arcTo(x+w,y,x+w,y+h,r);
+    this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r);
+    this.arcTo(x,y,x+w,y,r);
+    this.closePath();
+    return this;
+  };
+}
 
 function drawBarChart(canvas, items, colorFn, legendEl){
   const ctx = canvas.getContext('2d');
@@ -705,20 +854,6 @@ function drawKPI(canvas, kpis){
   const cellW = (W - pad*3)/2;
   const cellH = (H - pad*3)/2;
 
-  if (!CanvasRenderingContext2D.prototype.roundRect){
-    CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
-      r = Math.min(r, w/2, h/2);
-      this.beginPath();
-      this.moveTo(x+r,y);
-      this.arcTo(x+w,y,x+w,y+h,r);
-      this.arcTo(x+w,y+h,x,y+h,r);
-      this.arcTo(x,y+h,x,y,r);
-      this.arcTo(x,y,x+w,y,r);
-      this.closePath();
-      return this;
-    };
-  }
-
   for (let i=0;i<kpis.length;i++){
     const r = Math.floor(i/2), c = i%2;
     const x = pad + c*(cellW+pad);
@@ -729,8 +864,7 @@ function drawKPI(canvas, kpis){
     ctx.lineWidth=1;
     ctx.beginPath();
     ctx.roundRect(x,y,cellW,cellH,10);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
 
     ctx.fillStyle="#374151";
     ctx.font="12px system-ui";
@@ -798,12 +932,293 @@ function updateCharts(listOverride){
   ]);
 }
 
-// Wiring
-document.getElementById('q').addEventListener('input', ()=>{ render(); });
-document.getElementById('ownerFilter').addEventListener('change', ()=>{ render(); });
-document.getElementById('zoom').addEventListener('change', ()=>{ render(); });
+/* ---------- GitHub Settings + API ---------- */
+function ghDefaultCfg(){
+  return { owner:"", repo:"", branch:"main", path:"tasks.csv", token:"" };
+}
+function loadGhCfg(){
+  try{
+    const raw = localStorage.getItem(STORE_GH_CFG);
+    return raw ? ({...ghDefaultCfg(), ...JSON.parse(raw)}) : ghDefaultCfg();
+  }catch(_){ return ghDefaultCfg(); }
+}
+function saveGhCfg(cfg){
+  try{ localStorage.setItem(STORE_GH_CFG, JSON.stringify(cfg)); }catch(_){}
+}
+function cfgSummary(cfg){
+  const safeTok = cfg.token ? ("YES ("+cfg.token.slice(0,4)+"…"+cfg.token.slice(-4)+")") : "NO";
+  return `${cfg.owner}/${cfg.repo} · branch=${cfg.branch} · path=${cfg.path} · token=${safeTok}`;
+}
+function setCfgHint(){
+  const cfg = loadGhCfg();
+  document.getElementById('cfgHint').textContent = cfg.owner && cfg.repo ? cfgSummary(cfg) : "⚠ הגדר Owner/Repo ב-Settings";
+}
+function logStatus(msg){
+  const box = document.getElementById('statusBox');
+  const ts = new Date().toLocaleTimeString();
+  box.textContent = `[${ts}] ${msg}\n` + box.textContent;
+}
+
+function buildRawUrl(cfg){
+  return `https://raw.githubusercontent.com/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/${encodeURIComponent(cfg.branch)}/${cfg.path.replace(/^\/+/,'')}`;
+}
+function buildApiUrl(cfg){
+  // https://api.github.com/repos/{owner}/{repo}/contents/{path}?ref={branch}
+  const p = cfg.path.replace(/^\/+/,'');
+  return `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${p}?ref=${encodeURIComponent(cfg.branch)}`;
+}
+
+async function ghLoadTasks(){
+  const cfg = loadGhCfg();
+  if (!cfg.owner || !cfg.repo || !cfg.branch || !cfg.path){
+    alert("חסרים פרטים ב-Settings (Owner/Repo/Branch/Path).");
+    return;
+  }
+
+  // First try RAW (public)
+  const rawUrl = buildRawUrl(cfg);
+  logStatus(`Load RAW: ${rawUrl}`);
+  try{
+    const r = await fetch(rawUrl, {cache:"no-store"});
+    if (r.ok){
+      const text = await r.text();
+      await importCSVFromText(text, "RAW");
+      return;
+    }
+    logStatus(`RAW failed: ${r.status}`);
+  }catch(e){
+    logStatus(`RAW error: ${e}`);
+  }
+
+  // Fallback API (token)
+  if (!cfg.token){
+    alert("טעינה RAW נכשלה (אולי Repo פרטי). הוסף Token ב-Settings ואז נסה שוב.");
+    return;
+  }
+
+  const apiUrl = buildApiUrl(cfg);
+  logStatus(`Load API: ${apiUrl}`);
+  const r2 = await fetch(apiUrl, {
+    headers: {
+      "Accept":"application/vnd.github+json",
+      "Authorization": `Bearer ${cfg.token}`
+    }
+  });
+  if (!r2.ok){
+    const t = await r2.text().catch(()=> "");
+    logStatus(`API load failed: ${r2.status} ${t}`);
+    alert(`שגיאת API בטעינה: ${r2.status}. בדוק Token/הרשאות/נתיב קובץ.`);
+    return;
+  }
+  const j = await r2.json();
+  const content = j && j.content ? atob(j.content.replace(/\n/g,'')) : "";
+  if (!content.trim()){
+    alert("הקובץ נטען אבל ריק/לא תקין.");
+    return;
+  }
+  await importCSVFromText(content, "API");
+}
+
+async function ghSaveTasks(){
+  const cfg = loadGhCfg();
+  if (!cfg.owner || !cfg.repo || !cfg.branch || !cfg.path){
+    alert("חסרים פרטים ב-Settings (Owner/Repo/Branch/Path).");
+    return;
+  }
+  if (!cfg.token){
+    alert("כדי לשמור ל-Git צריך Token. היכנס ל-Settings והדבק Token עם הרשאות כתיבה.");
+    return;
+  }
+
+  ALL.forEach(calcDatesFromOffsets);
+  const csvText = exportCSVText(ALL).replace(/^\uFEFF/, ""); // store without BOM in repo (optional)
+  const contentB64 = btoa(unescape(encodeURIComponent(csvText)));
+
+  // Need SHA of current file if exists
+  const apiUrl = buildApiUrl(cfg).replace(/(\?ref=).+$/,'') + `?ref=${encodeURIComponent(cfg.branch)}`;
+  logStatus(`Fetch SHA: ${apiUrl}`);
+  let sha = null;
+
+  const r0 = await fetch(apiUrl, {
+    headers: {
+      "Accept":"application/vnd.github+json",
+      "Authorization": `Bearer ${cfg.token}`
+    }
+  });
+
+  if (r0.ok){
+    const j0 = await r0.json();
+    sha = j0.sha || null;
+    logStatus(`Found existing SHA: ${sha ? sha.slice(0,7) : "none"}`);
+  } else if (r0.status === 404){
+    logStatus(`File not found – will create new file at ${cfg.path}`);
+  } else {
+    const tx = await r0.text().catch(()=> "");
+    logStatus(`SHA fetch failed: ${r0.status} ${tx}`);
+    alert(`לא הצלחתי לקרוא SHA מה-API (${r0.status}). בדוק Token והרשאות.`);
+    return;
+  }
+
+  const putUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${cfg.path.replace(/^\/+/,'')}`;
+  const body = {
+    message: `Update ${cfg.path} via Gantt v18`,
+    content: contentB64,
+    branch: cfg.branch
+  };
+  if (sha) body.sha = sha;
+
+  logStatus(`PUT: ${putUrl}`);
+  const r1 = await fetch(putUrl, {
+    method:"PUT",
+    headers:{
+      "Accept":"application/vnd.github+json",
+      "Authorization": `Bearer ${cfg.token}`,
+      "Content-Type":"application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!r1.ok){
+    const tx = await r1.text().catch(()=> "");
+    logStatus(`PUT failed: ${r1.status} ${tx}`);
+    alert(`שגיאה בשמירה ל-GitHub: ${r1.status}. בדוק הרשאות Token/Branch.`);
+    return;
+  }
+
+  logStatus(`✅ Saved successfully.`);
+  alert("✅ נשמר ל-GitHub בהצלחה.");
+}
+
+/* Import CSV from text (used by Git load) */
+async function importCSVFromText(text, sourceLabel){
+  const rows = parseCSV(text);
+  const tasks = rows.map(coerceTask).filter(t=>t && t.id);
+  if (!tasks.length){
+    logStatus(`Import(${sourceLabel}) failed: 0 tasks`);
+    alert("טעינה הצליחה אבל לא נמצאו משימות ב-CSV (בדוק כותרות עמודות / פורמט).");
+    return;
+  }
+
+  ALL = tasks.map(t=>({...t}));
+  ALL.forEach(calcDatesFromOffsets);
+
+  // persist all as edits
+  const edits = {};
+  ALL.forEach(t=>{
+    edits[t.id] = {
+      id:String(t.id),
+      phase:t.phase||"",
+      name:t.name||"",
+      owner:t.owner||"",
+      startOffset:Number(t.startOffset||0),
+      duration:Number(t.duration||1),
+      deps:t.deps||"",
+      milestone: !!t.milestone,
+      notes: t.notes||"",
+      start:t.start, end:t.end
+    };
+  });
+  saveEdits(edits);
+  rebuildOwnerOptions(ALL);
+  document.getElementById('ownerFilter').value = "";
+  render();
+  updateCharts();
+  logStatus(`✅ Imported ${ALL.length} tasks from ${sourceLabel}`);
+  alert(`✅ נטענו ${ALL.length} משימות (${sourceLabel}).`);
+}
+
+/* ---------- Security helper ---------- */
+function escapeHtml(s){
+  s = String(s ?? "");
+  return s.replace(/[&<>"']/g, (ch)=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+  }[ch]));
+}
+
+/* ---------- Settings modal wiring ---------- */
+const modalBg = document.getElementById('modalBg');
+
+function openSettings(){
+  const cfg = loadGhCfg();
+  document.getElementById('ghOwner').value  = cfg.owner || "";
+  document.getElementById('ghRepo').value   = cfg.repo || "";
+  document.getElementById('ghBranch').value = cfg.branch || "main";
+  document.getElementById('ghPath').value   = cfg.path || "tasks.csv";
+  document.getElementById('ghToken').value  = cfg.token || "";
+  modalBg.style.display = "flex";
+  modalBg.setAttribute("aria-hidden","false");
+  setCfgHint();
+  logStatus("Opened Settings");
+}
+function closeSettings(){
+  modalBg.style.display = "none";
+  modalBg.setAttribute("aria-hidden","true");
+}
+
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
+document.getElementById('closeSettings').addEventListener('click', closeSettings);
+document.getElementById('closeSettings2').addEventListener('click', closeSettings);
+modalBg.addEventListener('click', (e)=>{ if (e.target === modalBg) closeSettings(); });
+
+document.getElementById('saveSettings').addEventListener('click', ()=>{
+  const cfg = {
+    owner:  document.getElementById('ghOwner').value.trim(),
+    repo:   document.getElementById('ghRepo').value.trim(),
+    branch: document.getElementById('ghBranch').value.trim() || "main",
+    path:   document.getElementById('ghPath').value.trim() || "tasks.csv",
+    token:  document.getElementById('ghToken').value.trim()
+  };
+  saveGhCfg(cfg);
+  setCfgHint();
+  logStatus("Saved Settings: " + cfgSummary(cfg));
+  alert("✅ Settings נשמרו בדפדפן.");
+});
+
+document.getElementById('forgetToken').addEventListener('click', ()=>{
+  const cfg = loadGhCfg();
+  cfg.token = "";
+  saveGhCfg(cfg);
+  document.getElementById('ghToken').value = "";
+  setCfgHint();
+  logStatus("Token removed from localStorage");
+  alert("✅ Token נמחק מהמכשיר.");
+});
+
+document.getElementById('testLoadRaw').addEventListener('click', async ()=>{
+  const cfg = loadGhCfg();
+  if (!cfg.owner || !cfg.repo){ alert("הכנס Owner/Repo קודם."); return; }
+  const url = buildRawUrl(cfg);
+  logStatus("Test RAW: " + url);
+  try{
+    const r = await fetch(url, {cache:"no-store"});
+    logStatus("RAW status: " + r.status);
+    alert("RAW status: " + r.status);
+  }catch(e){
+    logStatus("RAW error: " + e);
+    alert("RAW error");
+  }
+});
+
+document.getElementById('testApi').addEventListener('click', async ()=>{
+  const cfg = loadGhCfg();
+  if (!cfg.token){ alert("הכנס Token קודם."); return; }
+  const url = buildApiUrl(cfg);
+  logStatus("Test API: " + url);
+  const r = await fetch(url, {headers:{
+    "Accept":"application/vnd.github+json",
+    "Authorization": `Bearer ${cfg.token}`
+  }});
+  logStatus("API status: " + r.status);
+  alert("API status: " + r.status);
+});
+
+/* ---------- Main buttons wiring ---------- */
 document.getElementById('exportCsv').addEventListener('click', exportCSV);
+document.getElementById('downloadTemplate').addEventListener('click', downloadTemplate);
+document.getElementById('clearLocal').addEventListener('click', clearLocalCache);
 document.getElementById('reset').addEventListener('click', resetAll);
+document.getElementById('loadRepo').addEventListener('click', ghLoadTasks);
+document.getElementById('saveRepo').addEventListener('click', ghSaveTasks);
 
 document.getElementById('importBtn').addEventListener('click', async ()=>{
   const f = document.getElementById('importFile').files?.[0];
@@ -811,7 +1226,12 @@ document.getElementById('importBtn').addEventListener('click', async ()=>{
   await importCSVFromFile(f);
 });
 
-// initial
+document.getElementById('q').addEventListener('input', ()=>{ render(); });
+document.getElementById('ownerFilter').addEventListener('change', ()=>{ render(); });
+document.getElementById('zoom').addEventListener('change', ()=>{ render(); });
+
+/* ---------- Initial ---------- */
+setCfgHint();
 render();
 updateCharts();
 </script>
