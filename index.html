@@ -2027,133 +2027,85 @@
     }
 
     // ===== CSV PARSING AND GENERATION =====
-    function parseCSVWithHebrewHeaders(csvText) {
-      try {
-        logDebug('מתחיל פענוח CSV...');
-        
-        // הסר BOM
-        csvText = csvText.replace(/^\uFEFF/, '');
-        
-        // פיצול לשורות
-        const lines = csvText.split(/\r\n|\n|\r/);
-        logDebug(`מספר שורות בקובץ: ${lines.length}`);
-        
-        if (lines.length < 2) {
-          logDebug('הקובץ מכיל פחות מ-2 שורות');
-          return [];
-        }
-        
-        // פענוח כותרות
-        const headers = parseCSVLine(lines[0]);
-        logDebug(`כותרות: ${headers.join(', ')}`);
-        
-        // מיפוי כותרות עבריות לאנגלית
-        const headerMap = {};
-        const hebrewToEnglish = {
-          'מזהה': 'id',
-          'קטגוריה/שלב': 'phase',
-          'שם משימה': 'name',
-          'אחראי': 'owner',
-          'תאריך התחלה': 'start',
-          'תאריך סיום': 'end',
-          'משך (ימים)': 'duration',
-          'תלויות': 'deps',
-          'הערות': 'notes',
-          'startOffset': 'startOffset',
-          'milestone': 'milestone'
-        };
-        
-        headers.forEach((header, index) => {
-          const cleanHeader = header.trim();
-          headerMap[index] = hebrewToEnglish[cleanHeader] || cleanHeader;
-        });
-        
-        const tasks = [];
-        let skippedRows = 0;
-        
-        // עיבוד כל שורת נתונים
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) {
-            skippedRows++;
-            continue;
-          }
-          
-          const values = parseCSVLine(line);
-          
-          // יצירת אובייקט משימה עם ברירות מחדל
-          const task = {
-            id: '',
-            name: '',
-            phase: '',
-            owner: '',
-            start: '',
-            end: '',
-            duration: 1,
-            deps: '',
-            notes: '',
-            startOffset: 0,
-            milestone: false,
-            status: 'not-started'
-          };
-          
-          // מיפוי ערכים
-          Object.keys(headerMap).forEach(index => {
-            const fieldName = headerMap[index];
-            if (task.hasOwnProperty(fieldName) && values[index] !== undefined) {
-              let value = values[index].trim().replace(/^"|"$/g, '');
-              
-              // טיפול במקרים מיוחדים
-              if (fieldName === 'milestone') {
-                task[fieldName] = (
-                  value.toLowerCase() === 'true' || 
-                  value === '1' || 
-                  value.toLowerCase() === 'yes' ||
-                  value.toLowerCase() === 'אמת'
-                );
-              } else if (fieldName === 'duration' || fieldName === 'startOffset') {
-                task[fieldName] = parseInt(value) || 0;
-              } else {
-                task[fieldName] = value;
-              }
+    function parseCSVWithHebrewHeaders(csvString) {
+    if (!csvString) return [];
+    
+    // ניקוי תווים בלתי נראים בתחילת הקובץ (BOM)
+    csvString = csvString.trim();
+    const lines = csvString.split(/\r?\n/);
+    if (lines.length < 2) return [];
+
+    // פונקציית עזר לפירוק שורת CSV בצורה חכמה (תומכת במירכאות)
+    function splitCSVLine(line) {
+        const result = [];
+        let curVal = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            const nextChar = line[i + 1];
+            if (char === '"' && inQuotes && nextChar === '"') {
+                curVal += '"'; i++; // טיפול במירכאות כפולות
+            } else if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(curVal.trim());
+                curVal = '';
+            } else {
+                curVal += char;
             }
-          });
-          
-          // חישוב תאריכים חסרים
-          if (!task.start && task.startOffset !== undefined) {
-            const baseDate = new Date('2026-01-05');
-            const startDate = new Date(baseDate);
-            startDate.setDate(startDate.getDate() + task.startOffset);
-            task.start = formatDate(startDate);
-          }
-          
-          if (!task.end && task.start && task.duration) {
-            const endDate = new Date(task.start);
-            endDate.setDate(endDate.getDate() + task.duration);
-            task.end = formatDate(endDate);
-          }
-          
-          // אימות משימה
-          if (!task.id || !task.name) {
-            skippedRows++;
-            logDebug(`דילוג על שורה ${i+1}: חסר מזהה או שם`);
-            continue;
-          }
-          
-          tasks.push(task);
         }
-        
-        logDebug(`פענוח הושלם: ${tasks.length} משימות, ${skippedRows} שורות נדלגו`);
-        
-        return tasks;
-      } catch (error) {
-        console.error('שגיאה בפענוח CSV:', error);
-        logDebug(`שגיאת CSV: ${error.message}`);
-        showToast('שגיאה בקריאת קובץ ה-CSV', 'error');
-        return [];
-      }
+        result.push(curVal.trim());
+        return result;
     }
 
+    const headers = splitCSVLine(lines[0]);
+    const tasks = [];
+
+    // מיפוי כותרות לעמודות (תומך בעברית)
+    const colMap = {
+        id: headers.findIndex(h => h.includes('מזהה')),
+        phase: headers.findIndex(h => h.includes('קטגוריה') || h.includes('שלב')),
+        name: headers.findIndex(h => h.includes('שם משימה')),
+        owner: headers.findIndex(h => h.includes('אחראי')),
+        start: headers.findIndex(h => h.includes('תאריך התחלה')),
+        end: headers.findIndex(h => h.includes('תאריך סיום')),
+        duration: headers.findIndex(h => h.includes('משך')),
+        deps: headers.findIndex(h => h.includes('תלויות')),
+        notes: headers.findIndex(h => h.includes('הערות')),
+        offset: headers.findIndex(h => h.includes('startOffset')),
+        milestone: headers.findIndex(h => h.includes('milestone'))
+    };
+
+    for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        
+        const cols = splitCSVLine(lines[i]);
+        const id = cols[colMap.id];
+        const name = cols[colMap.name];
+
+        if (!id || !name) {
+            logDebug(`דילוג על שורה ${i + 1}: חסר מזהה (${id}) או שם (${name})`);
+            continue;
+        }
+
+        tasks.push({
+            id: id.toString(),
+            phase: cols[colMap.phase] || 'כללי',
+            name: name,
+            owner: cols[colMap.owner] || '',
+            start: cols[colMap.start] || '',
+            end: cols[colMap.end] || '',
+            duration: parseInt(cols[colMap.duration]) || 1,
+            dependencies: cols[colMap.deps] ? cols[colMap.deps].toString().split(/[,;]/).map(d => d.trim()).filter(d => d) : [],
+            notes: cols[colMap.notes] || '',
+            startOffset: parseInt(cols[colMap.offset]) || 0,
+            milestone: cols[colMap.milestone] === 'true' || cols[colMap.milestone] === 'TRUE' || cols[colMap.milestone] === '1',
+            status: 'not-started'
+        });
+    }
+
+    return tasks;
+}
     function parseCSVLine(line) {
       const values = [];
       let current = '';
