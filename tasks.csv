@@ -137,35 +137,35 @@ id,phase,name,owner,startOffset,duration,start,end,deps,milestone,notes
 143,ATP – Stage E | תת-שלב E.3,תרחיש: מתקפת DDOS מגזרית (Multi-Site),Elta,0,1,2026-01-05,2026-01-06,141,0,Use Case 3
 144,ATP – Stage E | תת-שלב E.4,תרחיש: הדמיית תקלת OT (OT Alert),Elta,0,1,2026-01-05,2026-01-06,114,0,Use Case 4
 145,ATP – Stage E | תת-שלב E.5,תרחיש: ניהול אירוע ב-CyConcerto מקצה לקצה,Elta,0,1,2026-01-05,2026-01-06,143,0,
-150,ATP – Stage F (השלמות ותיקופים),בדיקות שרידות ואתר משני (DR),צוות יעוץ/Eng,116,2,2026-05-01,2026-05-03,82,0,Section 7.0 in ATP Doc
+150,ATP – Stage F (השלמות ותיקופים),בדיקות שרידות ואתר משני (DR),צוות יעוץ/Eng,116,29,2026-05-01,2026-05-30,82,0,Section 7.0 in ATP Doc
 151,ATP – Stage F | תת-שלב F.1,בדיקת Replication Health (Unity),System,0,1,2026-01-05,2026-01-06,81,0,
 152,ATP – Stage F | תת-שלב F.2,בדיקת SRM Recovery Plan (Simulation),System,0,1,2026-01-05,2026-01-06,82,0,ללא ניתוק בפועל
 153,ATP – Stage F | תת-שלב F.3,בדיקת Failover מלאה (אתר ראשי מושבת),System,0,1,2026-01-05,2026-01-06,152,0,מעבר לאתר משני
 154,ATP – Stage F | תת-שלב F.4,בדיקת זמינות אפליקציות באתר ה-DR,System,0,1,2026-01-05,2026-01-06,153,0,
 155,ATP – Stage F | תת-שלב F.5,בדיקת Failback (חזרה לאקרה),System,0,1,2026-01-05,2026-01-06,154,0,
 160,ATP – Stage G (בדיקות מתקדמות וסגירה),בדיקות 17 אתרי קצה (Remote Sites),Indigo,0,2,2026-01-05,2026-01-07,77,0,Section 8.0 in ATP Doc
-161,ATP – Stage G | תת-שלב G.1,בדיקת Firewall & VPN – VRA,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-162,ATP – Stage G | תת-שלב G.2,בדיקת Firewall & VPN – GRIDCo,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-163,ATP – Stage G | תת-שלב G.3,בדיקת Firewall & VPN – ECG,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-164,ATP – Stage G | תת-שלב G.4,בדיקת Firewall & VPN – NEDCo,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-165,ATP – Stage G | תת-שלב G.5,בדיקת Firewall & VPN – BPA,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-166,ATP – Stage G | תת-שלב G.6,בדיקת Firewall & VPN – GNPC,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-167,ATP – Stage G | תת-שלב G.7,בדיקת Firewall & VPN – GNGC,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-168,ATP – Stage G | תת-שלב G.8,בדיקת Firewall & VPN – BOST,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-169,ATP – Stage G | תת-שלב G.9,בדיקת Firewall & VPN – Energy Commission,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-170,ATP – Stage G | תת-שלב G.10,בדיקת Firewall & VPN – PURC,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-171,ATP – Stage G | תת-שלב G.11,בדיקת Firewall & VPN – MoE,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-172,ATP – Stage G | תת-שלב G.12,בדיקת Firewall & VPN – VRA-Generation,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-173,ATP – Stage G | תת-שלב G.13,בדיקת Firewall & VPN – Volta Aluminium,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-174,ATP – Stage G | תת-שלב G.14,בדיקת Firewall & VPN – Tema Oil Refinery,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-175,ATP – Stage G | תת-שלב G.15,בדיקת Firewall & VPN – Ghana Gas,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-176,ATP – Stage G | תת-שלב G.16,בדיקת Firewall & VPN – Takoradi Plant,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-177,ATP – Stage G | תת-שלב G.17,בדיקת Firewall & VPN – Karpowership,Indigo,109,1,2026-04-24,2026-04-25,77,0,Group C per org
-178,ATP – Stage G | תת-שלב G.18,בדיקת Local Backup (Veeam) בכל אתר,System,0,1,2026-01-05,2026-01-06,161,0,
-179,ATP – Stage G | תת-שלב G.19,בדיקת ניטור OT Tap וזיהוי פרוטוקול,OT Exp,0,1,2026-01-05,2026-01-06,78,0,
-180,שלב 13 – סגירת פרויקט (Closure),"סיכום, תיעוד ומסירה",צוות יעוץ,0,2,2026-01-05,2026-01-07,155,0,
-181,שלב 13 – סגירת פרויקט | תת-שלב 13.1,איסוף חתימות ATP מכל 17 הגופים,צוות יעוץ,0,1,2026-01-05,2026-01-06,177,0,
-182,שלב 13 – סגירת פרויקט | תת-שלב 13.2,הכנת דוח ATP סופי (Final Test Report),צוות יעוץ,0,1,2026-01-05,2026-01-06,181,1,
-183,שלב 13 – סגירת פרויקט | תת-שלב 13.3,"מסירת ספר ""As-Built"" מעודכן",צוות יעוץ,0,1,2026-01-05,2026-01-06,182,0,
-184,שלב 13 – סגירת פרויקט | תת-שלב 13.4,העברת אחריות לצוות O&M (תמיכה),צוות יעוץ,0,1,2026-01-05,2026-01-06,183,0,
-185,שלב 13 – סגירת פרויקט | תת-שלב 13.5,חתימה על תעודת קבלה סופית (PAC),צוות יעוץ,0,1,2026-01-05,2026-01-06,184,0,
+161,ATP – Stage G | תת-שלב G.1,בדיקת Firewall & VPN – VRA,Indigo,109,50,2026-04-24,2026-06-13,77,0,Group C per org
+162,ATP – Stage G | תת-שלב G.2,בדיקת Firewall & VPN – GRIDCo,Indigo,109,46,2026-04-24,2026-06-09,77,0,Group C per org
+163,ATP – Stage G | תת-שלב G.3,בדיקת Firewall & VPN – ECG,Indigo,109,38,2026-04-24,2026-06-01,77,0,Group C per org
+164,ATP – Stage G | תת-שלב G.4,בדיקת Firewall & VPN – NEDCo,Indigo,109,53,2026-04-24,2026-06-16,77,0,Group C per org
+165,ATP – Stage G | תת-שלב G.5,בדיקת Firewall & VPN – BPA,Indigo,109,38,2026-04-24,2026-06-01,77,0,Group C per org
+166,ATP – Stage G | תת-שלב G.6,בדיקת Firewall & VPN – GNPC,Indigo,109,30,2026-04-24,2026-05-24,77,0,Group C per org
+167,ATP – Stage G | תת-שלב G.7,בדיקת Firewall & VPN – GNGC,Indigo,109,30,2026-04-24,2026-05-24,77,0,Group C per org
+168,ATP – Stage G | תת-שלב G.8,בדיקת Firewall & VPN – BOST,Indigo,109,30,2026-04-24,2026-05-24,77,0,Group C per org
+169,ATP – Stage G | תת-שלב G.9,בדיקת Firewall & VPN – Energy Commission,Indigo,109,51,2026-04-24,2026-06-14,77,0,Group C per org
+170,ATP – Stage G | תת-שלב G.10,בדיקת Firewall & VPN – PURC,Indigo,109,33,2026-04-24,2026-05-27,77,0,Group C per org
+171,ATP – Stage G | תת-שלב G.11,בדיקת Firewall & VPN – MoE,Indigo,109,25,2026-04-24,2026-05-19,77,0,Group C per org
+172,ATP – Stage G | תת-שלב G.12,בדיקת Firewall & VPN – VRA-Generation,Indigo,109,39,2026-04-24,2026-06-02,77,0,Group C per org
+173,ATP – Stage G | תת-שלב G.13,בדיקת Firewall & VPN – Volta Aluminium,Indigo,109,38,2026-04-24,2026-06-01,77,0,Group C per org
+174,ATP – Stage G | תת-שלב G.14,בדיקת Firewall & VPN – Tema Oil Refinery,Indigo,109,35,2026-04-24,2026-05-29,77,0,Group C per org
+175,ATP – Stage G | תת-שלב G.15,בדיקת Firewall & VPN – Ghana Gas,Indigo,109,35,2026-04-24,2026-05-29,77,0,Group C per org
+176,ATP – Stage G | תת-שלב G.16,בדיקת Firewall & VPN – Takoradi Plant,Indigo,127,54,2026-05-12,2026-07-05,77,0,Group C per org
+177,ATP – Stage G | תת-שלב G.17,בדיקת Firewall & VPN – Karpowership,Indigo,140,26,2026-05-25,2026-06-20,77,0,Group C per org
+178,ATP – Stage G | תת-שלב G.18,בדיקת Local Backup (Veeam) בכל אתר,System,0,22,2026-01-05,2026-01-27,161,0,
+179,ATP – Stage G | תת-שלב G.19,בדיקת ניטור OT Tap וזיהוי פרוטוקול,OT Exp,0,22,2026-01-05,2026-01-27,78,0,
+180,שלב 13 – סגירת פרויקט (Closure),"סיכום, תיעוד ומסירה",צוות יעוץ,0,82,2026-01-05,2026-03-28,155,0,
+181,שלב 13 – סגירת פרויקט | תת-שלב 13.1,איסוף חתימות ATP מכל 17 הגופים,צוות יעוץ,0,93,2026-01-05,2026-04-08,177,0,
+182,שלב 13 – סגירת פרויקט | תת-שלב 13.2,הכנת דוח ATP סופי (Final Test Report),צוות יעוץ,99,1,2026-04-14,2026-04-15,181,1,
+183,שלב 13 – סגירת פרויקט | תת-שלב 13.3,"מסירת ספר ""As-Built"" מעודכן",צוות יעוץ,34,85,2026-02-08,2026-05-04,182,0,
+184,שלב 13 – סגירת פרויקט | תת-שלב 13.4,העברת אחריות לצוות O&M (תמיכה),צוות יעוץ,0,84,2026-01-05,2026-03-30,183,0,
+185,שלב 13 – סגירת פרויקט | תת-שלב 13.5,חתימה על תעודת קבלה סופית (PAC),צוות יעוץ,0,104,2026-01-05,2026-04-19,184,0,
