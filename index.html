@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Gantt – Ghana Energy CERT (Drag & Drop) + Import/Export + GitHub</title>
 <style>
-  /* ===== Version 19 ===== */
+  /* ===== Version 20 ===== */
   body{
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     margin:0;background:#f6f7fb;color:#111827;
@@ -78,12 +78,29 @@
     .left{border-right:none;border-bottom:1px solid #e5e7eb}
     .workArea{height: min(70vh, 760px);}
   }
-  .chart-card{padding:12px}
+  .chart-card{padding:12px; position:relative;}
   .chart-title{font-weight:900;font-size:13px;margin:0 0 8px 0;direction:rtl;text-align:right}
   canvas{width:100%;height:160px;display:block}
   .chart-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;direction:ltr}
-  .chart-legend .it{display:flex;gap:6px;align-items:center;font-size:12px;color:#374151}
+  .chart-legend .it{display:flex;gap:6px;align-items:center;font-size:12px;color:#374151;max-width:100%}
+  .chart-legend .it span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
   .chart-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+  /* Tooltip for charts */
+  #chartTip{
+    position:fixed;
+    z-index:9999;
+    display:none;
+    padding:10px 12px;
+    background:#111827;
+    color:#fff;
+    border-radius:12px;
+    font-size:12px;
+    max-width:min(420px, 92vw);
+    box-shadow:0 14px 40px rgba(0,0,0,.35);
+    pointer-events:none;
+    white-space:pre-wrap;
+  }
 
   /* Modal (shared style) */
   .modal-backdrop{
@@ -130,21 +147,18 @@
     overflow:auto;
     max-height:160px;
   }
-
-  /* Task modal status */
-  #taskStatusBox{ direction:ltr; text-align:left; }
 </style>
 </head>
 <body>
 <header>
   <h1>
     AMIR DAVIDI TECHNOLOGIES – גאנט פרויקט Ghana Energy CERT (Drag & Drop)
-    <span class="pill">Version 19</span>
+    <span class="pill">Version 20</span>
   </h1>
   <div class="meta">
     ✅ גרירה מזיזה משימה | ✅ גרירת קצוות משנה Duration | ✅ חצים לתלויות<br/>
     ✅ Import/Export CSV | ✅ Load/Save ל-GitHub (tasks.csv) | ✅ לחיצה על משימה פותחת חלון עריכה מקצועי
-    <span class="pill">UTF-8 BOM</span>
+    <span class="pill">Hover על גרפים = שם מלא</span>
   </div>
 </header>
 
@@ -180,7 +194,7 @@
 
   <div class="dash">
     <div class="card chart-card">
-      <p class="chart-title">משימות לפי קטגוריה</p>
+      <p class="chart-title">משימות לפי קטגוריה (שם קצר + Hover לשם מלא)</p>
       <canvas id="chartCats" width="600" height="220"></canvas>
       <div class="chart-legend" id="lgCats"></div>
     </div>
@@ -211,6 +225,8 @@
     </div>
   </div>
 </div>
+
+<div id="chartTip"></div>
 
 <!-- Settings Modal -->
 <div class="modal-backdrop" id="modalBg" role="dialog" aria-modal="true" aria-hidden="true">
@@ -290,7 +306,7 @@
 
         <div class="fg" style="grid-column:1 / -1">
           <label>קטגוריה / שלב (Phase)</label>
-          <input id="te_phase" placeholder="לדוגמה: 6.1 Physical" />
+          <input id="te_phase" placeholder="לדוגמה: 6.1 Physical / שלב 5 – תתי-שלבים 5.1–5.17" />
         </div>
 
         <div class="fg">
@@ -345,17 +361,17 @@
 
 <script>
 /* =========================
-   Version 19 – GitHub + Task Editor
+   Version 20 – Perfect Categories + Tooltips
    ========================= */
 
 const MS_DAY = 86400000;
 const MIN_START = new Date("2026-01-05");
 const MAX_END   = new Date("2026-06-10");
 
-/* Demo base; you replace with full list or load from Git */
+/* Demo base; load from Git replaces it */
 const BASE = [
   {"id":"1","phase":"1. Management","name":"פתיחת פרויקט וניהול (Phase 1)","owner":"צוות יעוץ","startOffset":0,"duration":30,"deps":"","milestone":false,"notes":""},
-  {"id":"2","phase":"1.1 Admin","name":"פגישת קיק-אוף והתנעת צוות היגוי","owner":"צוות יעוץ","startOffset":0,"duration":2,"deps":"","milestone":true,"notes":"דוגמה: סמן milestone=true כדי לקבל יהלום"},
+  {"id":"2","phase":"1.1 Admin","name":"פגישת קיק-אוף והתנעת צוות היגוי","owner":"צוות יעוץ","startOffset":0,"duration":2,"deps":"","milestone":true,"notes":"דוגמה: milestone=true"},
   {"id":"3","phase":"1.1 Admin","name":"הקמת משרד PMO פיזי באקרה (Ghana)","owner":"Local Ops","startOffset":2,"duration":14,"deps":"2","milestone":false,"notes":""},
   {"id":"4","phase":"2. Design","name":"CDR - תכנון הנדסי מפורט (Design Phase)","owner":"Engineering","startOffset":0,"duration":60,"deps":"","milestone":false,"notes":""}
 ];
@@ -363,9 +379,9 @@ const BASE = [
 let ALL = BASE.map(t => ({...t}));
 
 /* Local storage keys */
-const STORE_KEY      = "gantt_tasks_v19_edits";
-const STORE_KEY_CSV  = "gantt_tasks_v19_csv_snapshot";
-const STORE_GH_CFG   = "gantt_github_cfg_v19";
+const STORE_KEY      = "gantt_tasks_v20_edits";
+const STORE_KEY_CSV  = "gantt_tasks_v20_csv_snapshot";
+const STORE_GH_CFG   = "gantt_github_cfg_v20";
 
 /* ---------- Helpers ---------- */
 function daysBetween(a,b){ return Math.round((b-a)/MS_DAY); }
@@ -379,23 +395,70 @@ function calcDatesFromOffsets(t){
   const e = new Date(s.getTime() + Math.max(1,Number(t.duration||1))*MS_DAY);
   t.start = fmt(s); t.end = fmt(e);
 }
-
-/* ---------- Category coloring ---------- */
-function categoryOf(t){
-  const p = (t.phase||"").trim();
-  if (!p) return "Other";
-  if (p.toLowerCase().startsWith("atp")) return "ATP";
-  if (p.toLowerCase() === "closure") return "Closure";
-  const first = p.split(/\s+/)[0];
-  const m = first.match(/^([0-9]+)(?:\.|$)/);
-  if (m) return "Phase " + m[1];
-  const m2 = first.match(/^([A-Z])\./i);
-  if (m2) return "Group " + m2[1].toUpperCase();
-  return first;
+function escapeHtml(s){
+  s = String(s ?? "");
+  return s.replace(/[&<>"']/g, (ch)=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+  }[ch]));
 }
-function colorForCategory(cat){
+
+/* ---------- PERFECT category labeling ---------- */
+/* Returns { short, full, groupKey } */
+function phaseInfo(phaseRaw){
+  const p = String(phaseRaw||"").replace(/\s+/g," ").trim();
+  if (!p) return {short:"Other", full:"Other", groupKey:"Other"};
+
+  // Hebrew "שלב X – ..." or "שלב X - ..."
+  const heb = p.match(/שלב\s*([0-9]+)/);
+  if (heb){
+    const num = heb[1];
+    const full = p;
+    // short = "שלב X" + optional tiny hint
+    let hint = "";
+    const afterDash = p.split(/[–-]/).slice(1).join(" ").trim();
+    if (afterDash){
+      hint = afterDash.length > 22 ? afterDash.slice(0,22)+"…" : afterDash;
+      hint = " – " + hint;
+    }
+    return { short:`שלב ${num}${hint}`, full, groupKey:`P${num}` };
+  }
+
+  // numeric only "5.18"
+  if (/^\d+(\.\d+)?$/.test(p)){
+    // optional friendly mapping
+    const map = {
+      "5.18":"Phase 5.18 – Final SSR Approvals",
+      "7.18":"Phase 7.18 – Cutover / Go-Live Readiness",
+      "7.19":"Phase 7.19 – Final Acceptance / Handover"
+    };
+    const full = map[p] ? map[p] : `Phase ${p}`;
+    return { short:`${p}`, full, groupKey:`P${String(p).split(".")[0]}` };
+  }
+
+  // standard: "6.1 Physical" OR "1. Management"
+  const m = p.match(/^(\d+(?:\.\d+)?)\s*[\.\-]?\s*(.*)$/);
+  if (m){
+    const code = m[1];
+    const rest = (m[2]||"").trim();
+    const full = p;
+    const short = rest ? `${code} – ${rest}` : `${code}`;
+    return { short, full, groupKey:`P${String(code).split(".")[0]}` };
+  }
+
+  // fallback: keep full but shorten for chart
+  const full = p;
+  const short = p.length > 26 ? (p.slice(0,26)+"…") : p;
+  return { short, full, groupKey:"Other" };
+}
+
+/* Used across UI */
+function categoryShort(t){ return phaseInfo(t.phase).short; }
+function categoryFull(t){ return phaseInfo(t.phase).full; }
+function categoryGroupKey(t){ return phaseInfo(t.phase).groupKey; }
+
+function colorForCategoryKey(key){
   const palette = ["#2563eb","#16a34a","#f59e0b","#dc2626","#9333ea","#0891b2","#7c3aed","#0ea5e9","#22c55e","#ea580c","#be123c","#0f766e","#4f46e5","#a16207","#1d4ed8"];
-  let h=0; for (let i=0;i<cat.length;i++) h = (h*31 + cat.charCodeAt(i)) >>> 0;
+  let h=0; for (let i=0;i<key.length;i++) h = (h*31 + key.charCodeAt(i)) >>> 0;
   return palette[h % palette.length];
 }
 function depsLabel(t){
@@ -498,7 +561,6 @@ function attachDrag(barEl, pxPerDay){
     calcDatesFromOffsets(t);
     barEl.style.left=(t.startOffset*pxPerDay)+'px';
     barEl.style.width=(Math.max(1,t.duration)*pxPerDay)+'px';
-    barEl.title=`${t.name} (Start: ${t.start}, End: ${t.end})`;
     updateCharts(); // live
   }
 
@@ -508,7 +570,7 @@ function attachDrag(barEl, pxPerDay){
     const t=findTask(barEl.dataset.id);
     if (t) persistOne(t);
     try{ barEl.releasePointerCapture(e.pointerId);}catch(_){}
-    render(); // refresh dependencies layout if changed
+    render();
   }
 
   barEl.addEventListener('pointerdown', onPointerDown);
@@ -528,14 +590,6 @@ function applyMilestoneStyle(barEl, isMilestone){
   barEl.style.transform = "rotate(45deg)";
 }
 
-/* ---------- Security helper ---------- */
-function escapeHtml(s){
-  s = String(s ?? "");
-  return s.replace(/[&<>"']/g, (ch)=>({
-    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
-  }[ch]));
-}
-
 /* ---------- Render ---------- */
 function render(){
   const q=(document.getElementById('q').value||'').toLowerCase().trim();
@@ -550,15 +604,19 @@ function render(){
   );
   const list = !ownerVal ? baseList : baseList.filter(t => (t.owner||'').toLowerCase()===ownerVal);
 
-  // Legend
+  // Legend (timeline categories) – show short text but tooltip full
   const legend=document.getElementById('legend');
   if (legend){
-    const cats=Array.from(new Set(list.map(t=>categoryOf(t)))).sort();
+    const infos = Array.from(new Map(list.map(t=>{
+      const info = phaseInfo(t.phase);
+      return [info.short, info];
+    })).values()).sort((a,b)=>a.short.localeCompare(b.short));
     legend.innerHTML='';
-    cats.forEach(cat=>{
+    infos.forEach(info=>{
       const item=document.createElement('div'); item.className='lg-item';
-      const sw=document.createElement('div'); sw.className='sw'; sw.style.background=colorForCategory(cat);
-      const tx=document.createElement('div'); tx.textContent=cat;
+      item.title = info.full;
+      const sw=document.createElement('div'); sw.className='sw'; sw.style.background=colorForCategoryKey(info.groupKey + "|" + info.short);
+      const tx=document.createElement('div'); tx.textContent=info.short;
       item.appendChild(sw); item.appendChild(tx); legend.appendChild(item);
     });
   }
@@ -573,6 +631,7 @@ function render(){
 
   list.forEach(t=>{
     const r=document.createElement('div'); r.className='row clickable';
+    r.title = `Phase: ${categoryFull(t)}`;
     r.innerHTML = `<div class="meta">#${escapeHtml(t.id)}</div><div class="title">${escapeHtml(t.name)}</div><div class="meta">${escapeHtml(t.owner||'')}</div>`;
     r.addEventListener('click', ()=> openTaskModal(t.id));
     left.appendChild(r);
@@ -612,8 +671,10 @@ function render(){
     bar.style.left=(Number(t.startOffset||0)*pxPerDay)+'px';
     bar.style.width = isMs ? (msSize+'px') : (durPx+'px');
 
-    bar.style.background=colorForCategory(categoryOf(t));
-    bar.title=`${t.name} (Start: ${t.start}, End: ${t.end})`;
+    const info = phaseInfo(t.phase);
+    bar.style.background = colorForCategoryKey(info.groupKey + "|" + info.short);
+    bar.title = `#${t.id}\n${t.name}\nPhase: ${info.full}\nOwner: ${t.owner||""}\nStart: ${t.start}  End: ${t.end}\nDeps: ${t.deps||"-"}`;
+
     applyMilestoneStyle(bar, isMs);
 
     const lbl=document.createElement('div');
@@ -634,9 +695,7 @@ function render(){
     const hR=document.createElement('div'); hR.className='handle right'; hR.dataset.handle='right';
     if (!isMs){ bar.appendChild(hL); bar.appendChild(hR); }
 
-    // click to edit (professional modal)
     bar.addEventListener('click', (e)=>{
-      // avoid click when user is dragging
       if (bar.classList.contains('dragging')) return;
       openTaskModal(t.id);
       e.preventDefault();
@@ -726,7 +785,7 @@ function exportCSV(){
 function downloadTemplate(){
   const sample = [
     {id:"1", phase:"1. Management", name:"Example task", owner:"Owner", startOffset:0, duration:7, deps:"", milestone:false, notes:""},
-    {id:"2", phase:"1.1 Admin", name:"Milestone example", owner:"Owner", startOffset:7, duration:1, deps:"1", milestone:true, notes:""}
+    {id:"2", phase:"שלב 5 – תתי-שלבים 5.1–5.17", name:"Hebrew phase example", owner:"Owner", startOffset:7, duration:1, deps:"1", milestone:true, notes:""}
   ];
   sample.forEach(calcDatesFromOffsets);
   const csvText = exportCSVText(sample);
@@ -796,13 +855,14 @@ function coerceTask(row){
   t.phase = String(pick("phase","Phase","Phase/Section","קטגוריה/שלב") ?? "").trim();
   t.name  = String(pick("name","Task","Task Name","שם משימה") ?? "").trim();
   t.owner = String(pick("owner","Owner","אחראי") ?? "").trim();
+
   t.deps  = String(pick("deps","Dependencies","תלויות") ?? "").trim();
   t.notes = String(pick("notes","Notes","הערות") ?? "").trim();
 
   const msRaw = pick("milestone","Milestone","אבן דרך","אבן_דרך");
   t.milestone = (String(msRaw ?? "").toLowerCase()==="true" || String(msRaw ?? "").toLowerCase()==="yes" || String(msRaw ?? "")==="1");
 
-  const so = pick("startOffset","start_offset","Start Offset (days)","Start Offset","StartOffset","Start Offset (Days)");
+  const so = pick("startOffset","start_offset","Start Offset (days)","Start Offset","StartOffset","Start Offset (Days)","startOffset ");
   const du = pick("duration","Duration","Duration (days)","Duration Days","משך (ימים)");
   t.startOffset = Number(so ?? 0);
   t.duration = Number(du ?? 1);
@@ -811,11 +871,15 @@ function coerceTask(row){
 
 async function importCSVFromFile(file){
   const text = await file.text();
+  await importCSVFromText(text, "FILE");
+}
+
+async function importCSVFromText(text, sourceLabel){
   const rows = parseCSV(text);
   const tasks = rows.map(coerceTask).filter(t=>t && t.id);
 
   if (!tasks.length){
-    alert("לא נמצאו משימות ב-CSV. ודא שיש עמודות id/name/phase/owner/startOffset/duration וכו'.");
+    alert("טעינה הצליחה אבל לא נמצאו משימות ב-CSV (בדוק כותרות עמודות / פורמט).");
     return;
   }
 
@@ -841,7 +905,9 @@ async function importCSVFromFile(file){
   rebuildOwnerOptions(ALL);
   document.getElementById('ownerFilter').value = "";
   render();
-  alert(`✅ Import הושלם: נטענו ${ALL.length} משימות והגאנט עודכן מיד.`);
+  updateCharts();
+  logStatus(`✅ Imported ${ALL.length} tasks from ${sourceLabel}`);
+  alert(`✅ נטענו ${ALL.length} משימות (${sourceLabel}).`);
 }
 
 /* ---------- Clear / Reset ---------- */
@@ -872,7 +938,23 @@ function resetAll(){
   alert("✅ איפוס מלא (כולל Settings).");
 }
 
-/* ---------- Mini chart engine ---------- */
+/* ---------- Mini chart engine + PERFECT tooltips ---------- */
+const chartTip = document.getElementById("chartTip");
+function showTip(x,y,text){
+  chartTip.textContent = text;
+  chartTip.style.display = "block";
+  const pad = 14;
+  const w = chartTip.offsetWidth;
+  const h = chartTip.offsetHeight;
+  let left = x + pad;
+  let top  = y + pad;
+  if (left + w > window.innerWidth - 8) left = x - w - pad;
+  if (top + h > window.innerHeight - 8) top = y - h - pad;
+  chartTip.style.left = left + "px";
+  chartTip.style.top  = top + "px";
+}
+function hideTip(){ chartTip.style.display = "none"; }
+
 function clearCanvas(ctx){ ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height); }
 
 if (!CanvasRenderingContext2D.prototype.roundRect){
@@ -889,12 +971,13 @@ if (!CanvasRenderingContext2D.prototype.roundRect){
   };
 }
 
-function drawBarChart(canvas, items, colorFn, legendEl){
+/* drawBarChart returns hit boxes for hover */
+function drawBarChart(canvas, items, colorFn, legendEl, labelMode){
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   clearCanvas(ctx);
 
-  const top = 16, bottom = 26, left = 8, right = 8;
+  const top = 16, bottom = 30, left = 8, right = 8;
   const plotW = W - left - right;
   const plotH = H - top - bottom;
 
@@ -903,6 +986,7 @@ function drawBarChart(canvas, items, colorFn, legendEl){
   const gap = 6;
   const barW = Math.max(10, Math.floor((plotW - gap*(barCount-1))/barCount));
 
+  // baseline
   ctx.strokeStyle = "#e5e7eb";
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -910,38 +994,80 @@ function drawBarChart(canvas, items, colorFn, legendEl){
   ctx.lineTo(left+plotW, top+plotH);
   ctx.stroke();
 
+  const hit = [];
+
   items.forEach((it, i)=>{
     const h = Math.round((it.v/maxV) * (plotH-2));
     const x = left + i*(barW+gap);
     const y = top + (plotH - h);
-    ctx.fillStyle = colorFn(it.k, i);
+    const col = colorFn(it.k, i);
+
+    ctx.fillStyle = col;
     ctx.fillRect(x, y, barW, h);
 
+    // value
     ctx.fillStyle = "#111827";
     ctx.font = "12px system-ui";
     ctx.textAlign = "center";
     ctx.fillText(String(it.v), x+barW/2, y-4);
 
-    const lab = it.k.length > 10 ? (it.k.slice(0,10)+"…") : it.k;
+    // label
+    let lab = it.k;
+    if (labelMode === "short"){
+      lab = it.short || it.k;
+    }
+    const shown = lab.length > 18 ? (lab.slice(0,18)+"…") : lab;
     ctx.fillStyle = "#374151";
     ctx.font = "11px system-ui";
-    ctx.fillText(lab, x+barW/2, top+plotH+16);
+    ctx.fillText(shown, x+barW/2, top+plotH+18);
+
+    hit.push({
+      x, y, w:barW, h,
+      tooltip: it.tooltip || `${it.k}: ${it.v}`
+    });
   });
 
+  // legend (full labels with tooltips)
   if (legendEl){
     legendEl.innerHTML = "";
     items.slice(0,12).forEach((it, i)=>{
       const div = document.createElement('div');
       div.className="it";
+      div.title = it.full || it.k;
       const dot = document.createElement('span');
       dot.className="dot";
       dot.style.background = colorFn(it.k, i);
       const tx = document.createElement('span');
-      tx.textContent = `${it.k}: ${it.v}`;
+      const label = (it.short && it.full) ? `${it.short} · ${it.v}` : `${it.k}: ${it.v}`;
+      tx.textContent = label;
       div.appendChild(dot); div.appendChild(tx);
       legendEl.appendChild(div);
+
+      // hover on legend shows full tooltip too
+      div.addEventListener("mousemove", (e)=>{
+        const tip = (it.full ? it.full : it.k) + `\nCount: ${it.v}`;
+        showTip(e.clientX, e.clientY, tip);
+      });
+      div.addEventListener("mouseleave", hideTip);
     });
   }
+
+  // canvas hover tooltip
+  canvas.onmousemove = (e)=>{
+    const rect = canvas.getBoundingClientRect();
+    const sx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const sy = (e.clientY - rect.top)  * (canvas.height / rect.height);
+    for (const hb of hit){
+      if (sx >= hb.x && sx <= hb.x+hb.w && sy >= hb.y && sy <= hb.y+hb.h){
+        showTip(e.clientX, e.clientY, hb.tooltip);
+        return;
+      }
+    }
+    hideTip();
+  };
+  canvas.onmouseleave = hideTip;
+
+  return hit;
 }
 
 function drawKPI(canvas, kpis){
@@ -1004,15 +1130,51 @@ function updateCharts(listOverride){
     return !ownerVal ? baseList : baseList.filter(t => (t.owner||'').toLowerCase()===ownerVal);
   })();
 
-  const cats = getCounts(list, t=>categoryOf(t)).slice(0,10);
-  const owners = getCounts(list, t=>(t.owner||"—")).slice(0,10);
+  // Categories: use SHORT key, keep FULL for tooltip
+  const catMap = new Map(); // short -> {short, full, v, groupKey}
+  list.forEach(t=>{
+    const info = phaseInfo(t.phase);
+    const key = info.short; // chart key = short
+    const cur = catMap.get(key);
+    if (!cur){
+      catMap.set(key, {k:key, short:info.short, full:info.full, groupKey:info.groupKey, v:1});
+    }else{
+      cur.v++;
+      // keep the "longest" full for best info
+      if ((info.full||"").length > (cur.full||"").length) cur.full = info.full;
+    }
+  });
+  const cats = Array.from(catMap.values()).sort((a,b)=>b.v-a.v).slice(0,10);
 
-  drawBarChart(document.getElementById('chartCats'), cats, (k)=>colorForCategory(k), document.getElementById('lgCats'));
-  drawBarChart(document.getElementById('chartOwners'), owners, (k)=>{
-    let h=0; for (let i=0;i<k.length;i++) h=(h*31+k.charCodeAt(i))>>>0;
-    const pal=["#2563eb","#16a34a","#f59e0b","#dc2626","#9333ea","#0891b2","#7c3aed","#0ea5e9","#22c55e","#ea580c"];
-    return pal[h%pal.length];
-  }, document.getElementById('lgOwners'));
+  const owners = getCounts(list, t=>(t.owner||"—")).slice(0,10).map(x=>({
+    ...x,
+    tooltip: `Owner: ${x.k}\nTasks: ${x.v}`
+  }));
+
+  drawBarChart(
+    document.getElementById('chartCats'),
+    cats.map(it=>({
+      ...it,
+      tooltip: `Category (FULL): ${it.full}\nCategory (SHORT): ${it.short}\nTasks: ${it.v}`
+    })),
+    (k, i)=>{
+      const it = cats.find(x=>x.k===k) || {};
+      return colorForCategoryKey((it.groupKey||"Other") + "|" + k);
+    },
+    document.getElementById('lgCats'),
+    "short"
+  );
+
+  drawBarChart(
+    document.getElementById('chartOwners'),
+    owners,
+    (k)=>{
+      let h=0; for (let i=0;i<k.length;i++) h=(h*31+k.charCodeAt(i))>>>0;
+      const pal=["#2563eb","#16a34a","#f59e0b","#dc2626","#9333ea","#0891b2","#7c3aed","#0ea5e9","#22c55e","#ea580c"];
+      return pal[h%pal.length];
+    },
+    document.getElementById('lgOwners')
+  );
 
   const milestones = list.filter(t=>!!t.milestone).length;
   const depsCount = list.reduce((acc,t)=> acc + (String(t.deps||'').split(/[,\s]+/).filter(Boolean).length), 0);
@@ -1032,18 +1194,14 @@ function updateCharts(listOverride){
 }
 
 /* ---------- GitHub Settings + API ---------- */
-function ghDefaultCfg(){
-  return { owner:"", repo:"", branch:"main", path:"tasks.csv", token:"" };
-}
+function ghDefaultCfg(){ return { owner:"", repo:"", branch:"main", path:"tasks.csv", token:"" }; }
 function loadGhCfg(){
   try{
     const raw = localStorage.getItem(STORE_GH_CFG);
     return raw ? ({...ghDefaultCfg(), ...JSON.parse(raw)}) : ghDefaultCfg();
   }catch(_){ return ghDefaultCfg(); }
 }
-function saveGhCfg(cfg){
-  try{ localStorage.setItem(STORE_GH_CFG, JSON.stringify(cfg)); }catch(_){}
-}
+function saveGhCfg(cfg){ try{ localStorage.setItem(STORE_GH_CFG, JSON.stringify(cfg)); }catch(_){} }
 function cfgSummary(cfg){
   const safeTok = cfg.token ? ("YES ("+cfg.token.slice(0,4)+"…"+cfg.token.slice(-4)+")") : "NO";
   return `${cfg.owner}/${cfg.repo} · branch=${cfg.branch} · path=${cfg.path} · token=${safeTok}`;
@@ -1064,42 +1222,6 @@ function buildRawUrl(cfg){
 function buildApiUrl(cfg){
   const p = cfg.path.replace(/^\/+/,'');
   return `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${p}?ref=${encodeURIComponent(cfg.branch)}`;
-}
-
-async function importCSVFromText(text, sourceLabel){
-  const rows = parseCSV(text);
-  const tasks = rows.map(coerceTask).filter(t=>t && t.id);
-  if (!tasks.length){
-    logStatus(`Import(${sourceLabel}) failed: 0 tasks`);
-    alert("טעינה הצליחה אבל לא נמצאו משימות ב-CSV (בדוק כותרות עמודות / פורמט).");
-    return;
-  }
-
-  ALL = tasks.map(t=>({...t}));
-  ALL.forEach(calcDatesFromOffsets);
-
-  const edits = {};
-  ALL.forEach(t=>{
-    edits[t.id] = {
-      id:String(t.id),
-      phase:t.phase||"",
-      name:t.name||"",
-      owner:t.owner||"",
-      startOffset:Number(t.startOffset||0),
-      duration:Number(t.duration||1),
-      deps:t.deps||"",
-      milestone: !!t.milestone,
-      notes: t.notes||"",
-      start:t.start, end:t.end
-    };
-  });
-  saveEdits(edits);
-  rebuildOwnerOptions(ALL);
-  document.getElementById('ownerFilter').value = "";
-  render();
-  updateCharts();
-  logStatus(`✅ Imported ${ALL.length} tasks from ${sourceLabel}`);
-  alert(`✅ נטענו ${ALL.length} משימות (${sourceLabel}).`);
 }
 
 async function ghLoadTasks(){
@@ -1192,7 +1314,7 @@ async function ghSaveTasks(){
 
   const putUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${cfg.path.replace(/^\/+/,'')}`;
   const body = {
-    message: `Update ${cfg.path} via Gantt v19`,
+    message: `Update ${cfg.path} via Gantt v20`,
     content: contentB64,
     branch: cfg.branch
   };
@@ -1461,6 +1583,7 @@ document.addEventListener('keydown', (e)=>{
   if (e.key === "Escape"){
     if (taskBg.style.display === "flex") closeTaskModal();
     if (modalBg.style.display === "flex") closeSettings();
+    hideTip();
   }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==="s"){
     if (taskBg.style.display === "flex"){
