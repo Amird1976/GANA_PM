@@ -5,14 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Gantt – Ghana Energy CERT (Drag & Drop) + Import/Export + GitHub</title>
 <style>
-  /* ===== Version 21 (fixed) ===== */
+  /* ===== Version 22 ===== */
   body{
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     margin:0;background:#f6f7fb;color:#111827;
     overflow:auto;
   }
 
-  /* Always show scrollbars when possible */
   *{ scrollbar-gutter: stable both-edges; }
   ::-webkit-scrollbar{ width:12px; height:12px; }
   ::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:999px; border:3px solid #f6f7fb; }
@@ -36,7 +35,6 @@
 
   .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 
-  /* Fixed work area to force internal scrollbars */
   .workArea{ height: min(62vh, 680px); }
 
   .grid{display:grid;grid-template-columns: 540px 1fr;}
@@ -95,21 +93,16 @@
 
   /* Tooltip for charts */
   #chartTip{
-    position:fixed;
-    z-index:9999;
-    display:none;
-    padding:10px 12px;
-    background:#111827;
-    color:#fff;
-    border-radius:12px;
-    font-size:12px;
+    position:fixed; z-index:9999; display:none;
+    padding:10px 12px; background:#111827; color:#fff;
+    border-radius:12px; font-size:12px;
     max-width:min(420px, 92vw);
     box-shadow:0 14px 40px rgba(0,0,0,.35);
     pointer-events:none;
     white-space:pre-wrap;
   }
 
-  /* Modal (shared style) */
+  /* Modal */
   .modal-backdrop{
     position:fixed; inset:0;
     background:rgba(17,24,39,.55);
@@ -117,7 +110,7 @@
     padding:16px; z-index:50;
   }
   .modal{
-    width:min(880px, 100%);
+    width:min(920px, 100%);
     background:#fff; border-radius:16px;
     border:1px solid #e5e7eb;
     box-shadow:0 20px 70px rgba(0,0,0,.25);
@@ -155,7 +148,7 @@
     max-height:160px;
   }
 
-  /* Dependencies UI */
+  /* Dependencies CHECKBOX UI */
   #depsDropZone{
     border:1px dashed #cbd5e1;
     border-radius:14px;
@@ -168,28 +161,46 @@
     box-shadow:0 0 0 3px rgba(37,99,235,.15);
     background:#f8fbff;
   }
-  #te_deps_select{
-    min-height:160px;
-    overflow:auto;
-  }
-  #te_deps_select option{ padding:6px 6px; }
-
   .depsTop{
     display:flex; gap:10px; flex-wrap:wrap; align-items:center;
     margin-bottom:10px;
   }
-  .depsTop select{ flex:1; min-width:240px; }
+  .depsTop input{
+    flex:1; min-width:220px;
+    padding:10px 12px;border:1px solid #d1d5e1;border-radius:10px;font-size:14px
+  }
+  .depsList{
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    overflow:auto;
+    max-height:260px;
+    background:#fff;
+  }
+  .depItem{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    padding:8px 10px;
+    border-bottom:1px solid #f1f5f9;
+    direction:rtl;
+    text-align:right;
+  }
+  .depItem:hover{ background:#f8fafc; }
+  .depItem:last-child{ border-bottom:none; }
+  .depItem input[type=checkbox]{ margin-top:3px; transform:scale(1.1); cursor:pointer; }
+  .depText{font-size:13px; line-height:1.25}
+  .depMeta{font-size:12px; color:#64748b; margin-top:2px}
 </style>
 </head>
 <body>
 <header>
   <h1>
     AMIR DAVIDI TECHNOLOGIES – גאנט פרויקט Ghana Energy CERT (Drag & Drop)
-    <span class="pill">Version 21</span>
+    <span class="pill">Version 22</span>
   </h1>
   <div class="meta">
-    ✅ עריכת משימה עם תאריכים (Date Picker) · ✅ Dependencies ב-Dropdown + Drag&Drop · ✅ Load/Save ל-GitHub (tasks.csv)
-    <span class="pill">בלי מקרא צבעים למעלה</span>
+    ✅ Dependencies כ-Checkbox · ✅ Export PDF ניהולי (Print to PDF) · ✅ Load/Save ל-GitHub
+    <span class="pill">גלילה בכל מקום</span>
   </div>
 </header>
 
@@ -206,10 +217,13 @@
     <button class="btn-primary" id="exportCsv">Export CSV</button>
     <button class="btn-ghost" id="settingsBtn">Settings (GitHub)</button>
 
-    <button class="btn-ok" id="loadRepo" title="טען tasks.csv מה-GitHub (Public בלי טוקן דרך RAW; Private דרך API)">Load from GIT (tasks.csv)</button>
-    <button class="btn-primary" id="saveRepo" title="שמור tasks.csv חזרה ל-GitHub (דורש Token עם הרשאות)">Save to GIT (tasks.csv)</button>
-    <button class="btn-ghost" id="downloadTemplate" title="הורד תבנית CSV מלאה לייבוא">Download CSV Template</button>
-    <button class="btn-warn" id="clearLocal" title="מוחק שינויים מקומיים ומחזיר למצב בסיס">Clear Local Cache</button>
+    <button class="btn-ok" id="loadRepo">Load from GIT (tasks.csv)</button>
+    <button class="btn-primary" id="saveRepo">Save to GIT (tasks.csv)</button>
+
+    <button class="btn-ghost" id="exportPdf" title="דוח ניהולי לפי הפילטר הנוכחי">Export PDF ניהולי</button>
+
+    <button class="btn-ghost" id="downloadTemplate">Download CSV Template</button>
+    <button class="btn-warn" id="clearLocal">Clear Local Cache</button>
 
     <div style="flex:1"></div>
 
@@ -223,7 +237,7 @@
 
   <div class="dash">
     <div class="card chart-card">
-      <p class="chart-title">משימות לפי קטגוריה (שם קצר + Hover לשם מלא)</p>
+      <p class="chart-title">משימות לפי קטגוריה (Hover לשם מלא)</p>
       <canvas id="chartCats" width="600" height="220"></canvas>
       <div class="chart-legend" id="lgCats"></div>
     </div>
@@ -250,7 +264,7 @@
       </div>
     </div>
     <div class="hint">
-      איך להוסיף תלות בדרופ: גרור את כפתור ה-➕ ליד משימה מהרשימה השמאלית לתוך תיבת Dependencies בחלון העריכה.
+      טיפ: כדי להוסיף תלות מהר — גרור את ➕ מהרשימה השמאלית לתוך תיבת Dependencies בחלון העריכה.
     </div>
   </div>
 </div>
@@ -339,12 +353,12 @@
         </div>
 
         <div class="fg">
-          <label>Start Date (קל לבחור)</label>
+          <label>Start Date</label>
           <input id="te_startDate" type="date" />
         </div>
 
         <div class="fg">
-          <label>End Date (קל לבחור)</label>
+          <label>End Date</label>
           <input id="te_endDate" type="date" />
         </div>
 
@@ -367,21 +381,20 @@
         </div>
 
         <div class="fg" style="grid-column:1 / -1">
-          <label>Dependencies (בחר משימות / הוסף / או גרור לכאן)</label>
+          <label>Dependencies (Checkbox) – סמן כמה תלויות שתרצה</label>
 
           <div id="depsDropZone" title="אפשר לגרור לכאן משימה מהרשימה השמאלית (אייקון ➕)">
             <div class="depsTop">
-              <select id="te_dep_add">
-                <option value="">בחר משימה להוספה…</option>
-              </select>
-              <button class="btn-ghost" id="btnAddDep" type="button">הוסף תלות</button>
-              <button class="btn-warn" id="btnClearDeps" type="button">נקה</button>
+              <input id="depsSearch" placeholder="חיפוש ברשימת תלויות (#ID / שם / Owner / Phase)..." />
+              <button class="btn-ghost" id="depsSelectAll" type="button">בחר הכל</button>
+              <button class="btn-ghost" id="depsSelectNone" type="button">נקה הכל</button>
             </div>
 
-            <select id="te_deps_select" multiple size="8"></select>
+            <div class="depsList" id="depsList"></div>
 
-            <div style="font-size:12px;color:#6b7280;direction:rtl;text-align:right;margin-top:6px">
-              נשמר אוטומטית כ-CSV IDs: <span class="pill" id="depsPreview">—</span>
+            <div style="font-size:12px;color:#6b7280;direction:rtl;text-align:right;margin-top:8px">
+              נשמר אוטומטית כ-CSV IDs:
+              <span class="pill" id="depsPreview">—</span>
             </div>
           </div>
         </div>
@@ -405,14 +418,13 @@
 
 <script>
 /* =========================
-   Version 21 (fixed)
+   Version 22
    ========================= */
-
 const MS_DAY = 86400000;
 const MIN_START = new Date("2026-01-05");
 const MAX_END   = new Date("2026-06-10");
 
-/* Demo base; load from Git replaces it */
+/* Demo base; Load from Git replaces it */
 const BASE = [
   {"id":"1","phase":"1. Management","name":"פתיחת פרויקט וניהול (Phase 1)","owner":"צוות יעוץ","startOffset":0,"duration":30,"deps":"","milestone":false,"notes":""},
   {"id":"2","phase":"1.1 Admin","name":"פגישת קיק-אוף והתנעת צוות היגוי","owner":"צוות יעוץ","startOffset":0,"duration":2,"deps":"","milestone":true,"notes":"דוגמה: milestone=true"},
@@ -423,9 +435,9 @@ const BASE = [
 let ALL = BASE.map(t => ({...t}));
 
 /* Local storage keys */
-const STORE_KEY      = "gantt_tasks_v21_edits";
-const STORE_KEY_CSV  = "gantt_tasks_v21_csv_snapshot";
-const STORE_GH_CFG   = "gantt_github_cfg_v21";
+const STORE_KEY      = "gantt_tasks_v22_edits";
+const STORE_KEY_CSV  = "gantt_tasks_v22_csv_snapshot";
+const STORE_GH_CFG   = "gantt_github_cfg_v22";
 
 /* ---------- Helpers ---------- */
 function daysBetween(a,b){ return Math.round((b-a)/MS_DAY); }
@@ -565,7 +577,7 @@ function buildTicks(pxPerDay){
   tl.appendChild(ticks);
 }
 
-/* ---------- Drag (schedule) ---------- */
+/* ---------- Drag schedule ---------- */
 function attachDrag(barEl, pxPerDay){
   let mode="move", startX=0, origOffset=0, origDuration=0;
 
@@ -617,28 +629,31 @@ function attachDrag(barEl, pxPerDay){
   barEl.addEventListener('pointercancel', onPointerUp);
 }
 
-/* ---------- Milestone look ---------- */
+/* ---------- Milestone ---------- */
 function applyMilestoneStyle(barEl, isMilestone){
   if (!isMilestone) { barEl.style.borderRadius="10px"; barEl.style.transform="none"; return; }
   barEl.style.borderRadius="4px";
   barEl.style.transform="rotate(45deg)";
 }
 
-/* ---------- Render ---------- */
-function render(){
+/* ---------- Filtering (central) ---------- */
+function getFilteredList(){
   const q=(document.getElementById('q').value||'').toLowerCase().trim();
   const ownerVal=(document.getElementById('ownerFilter').value||'').toLowerCase();
-  const pxPerDay=pxPerDayForZoom();
-
   const baseList = !q ? ALL : ALL.filter(t =>
     (t.name||'').toLowerCase().includes(q) ||
     (t.owner||'').toLowerCase().includes(q) ||
     (t.phase||'').toLowerCase().includes(q) ||
     String(t.id||'').toLowerCase().includes(q)
   );
-  const list = !ownerVal ? baseList : baseList.filter(t => (t.owner||'').toLowerCase()===ownerVal);
+  return !ownerVal ? baseList : baseList.filter(t => (t.owner||'').toLowerCase()===ownerVal);
+}
 
-  // Left list
+/* ---------- Render ---------- */
+function render(){
+  const list = getFilteredList();
+  const pxPerDay=pxPerDayForZoom();
+
   const left=document.getElementById('left');
   left.innerHTML='';
 
@@ -691,7 +706,6 @@ function render(){
   const bars=document.getElementById('bars');
   bars.innerHTML='';
 
-  // Dependency overlay SVG
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.classList.add('dep-layer'); svg.setAttribute('aria-hidden','true');
   const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
@@ -757,7 +771,6 @@ function render(){
     bars.appendChild(row);
   });
 
-  // Draw dependency lines among visible
   const rowsCount=list.length;
   const svgHeight=rowsCount*34;
   svg.setAttribute('width', width);
@@ -831,7 +844,6 @@ function exportCSV(){
   setTimeout(()=>URL.revokeObjectURL(url), 5000);
   try{ localStorage.setItem(STORE_KEY_CSV, csvText);}catch(_){}
 }
-
 function downloadTemplate(){
   const sample = [
     {id:"1", phase:"1. Management", name:"Example task", owner:"Owner", startOffset:0, duration:7, deps:"", milestone:false, notes:""},
@@ -847,12 +859,10 @@ function downloadTemplate(){
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 5000);
 }
-
 function parseCSV(text){
   const lines = text.replace(/^\uFEFF/,'').split(/\r\n|\n|\r/);
   const out = [];
   let headers = null;
-
   function splitLine(line){
     const res=[];
     let cur="", inQ=false;
@@ -872,7 +882,6 @@ function parseCSV(text){
     res.push(cur);
     return res;
   }
-
   for (let i=0;i<lines.length;i++){
     const line=lines[i];
     if (!line.trim()) continue;
@@ -887,7 +896,6 @@ function parseCSV(text){
   }
   return out;
 }
-
 function coerceTask(row){
   const pick = (...keys) => {
     for (const k of keys){
@@ -934,12 +942,10 @@ function coerceTask(row){
 
   return t;
 }
-
 async function importCSVFromFile(file){
   const text = await file.text();
   await importCSVFromText(text, "FILE");
 }
-
 async function importCSVFromText(text, sourceLabel){
   const rows = parseCSV(text);
   const tasks = rows.map(coerceTask).filter(t=>t && t.id);
@@ -1117,7 +1123,6 @@ function drawBarChart(canvas, items, colorFn, legendEl, labelMode){
   };
   canvas.onmouseleave = hideTip;
 }
-
 function drawKPI(canvas, kpis){
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
@@ -1155,19 +1160,8 @@ function drawKPI(canvas, kpis){
     ctx.fillText(kpis[i].s||"", x+cellW-10, y+70);
   }
 }
-
 function updateCharts(listOverride){
-  const list = listOverride || (()=>{
-    const q=(document.getElementById('q').value||'').toLowerCase().trim();
-    const ownerVal=(document.getElementById('ownerFilter').value||'').toLowerCase();
-    const baseList = !q ? ALL : ALL.filter(t =>
-      (t.name||'').toLowerCase().includes(q) ||
-      (t.owner||'').toLowerCase().includes(q) ||
-      (t.phase||'').toLowerCase().includes(q) ||
-      String(t.id||'').toLowerCase().includes(q)
-    );
-    return !ownerVal ? baseList : baseList.filter(t => (t.owner||'').toLowerCase()===ownerVal);
-  })();
+  const list = listOverride || getFilteredList();
 
   const catMap = new Map();
   list.forEach(t=>{
@@ -1233,7 +1227,9 @@ function updateCharts(listOverride){
   ]);
 }
 
-/* ---------- GitHub Settings + API ---------- */
+/* =========================
+   GitHub Settings + API
+   ========================= */
 function ghDefaultCfg(){ return { owner:"", repo:"", branch:"main", path:"tasks.csv", token:"" }; }
 function loadGhCfg(){
   try{
@@ -1351,7 +1347,7 @@ async function ghSaveTasks(){
 
   const putUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${cfg.path.replace(/^\/+/,'')}`;
   const body = {
-    message: `Update ${cfg.path} via Gantt v21`,
+    message: `Update ${cfg.path} via Gantt v22`,
     content: contentB64,
     branch: cfg.branch
   };
@@ -1452,7 +1448,7 @@ document.getElementById('testApi').addEventListener('click', async ()=>{
 });
 
 /* =========================
-   Task Editor
+   Task Editor + Dependencies CHECKBOX
    ========================= */
 let CURRENT_EDIT_ID = null;
 function tlog(msg){
@@ -1461,16 +1457,17 @@ function tlog(msg){
   box.textContent = `[${ts}] ${msg}\n` + box.textContent;
 }
 
-/* Dependencies helpers */
 function depsToArray(depsStr){
   return String(depsStr||"").split(/[,\s]+/).map(x=>x.trim()).filter(Boolean);
 }
 function depsToSet(depsStr){ return new Set(depsToArray(depsStr)); }
 
-function buildDepAddOptions(currentTaskId){
-  const sel = document.getElementById("te_dep_add");
-  if (!sel) return;
-  sel.innerHTML = `<option value="">בחר משימה להוספה…</option>`;
+function buildDepsCheckboxList(currentTaskId, depsStr){
+  const listEl = document.getElementById("depsList");
+  const searchEl = document.getElementById("depsSearch");
+  if (!listEl || !searchEl) return;
+
+  const selected = depsToSet(depsStr);
 
   const sorted = [...ALL].slice().sort((a,b)=>{
     const na = Number(String(a.id).replace(/[^\d.]/g,""));
@@ -1479,67 +1476,103 @@ function buildDepAddOptions(currentTaskId){
     return String(a.id).localeCompare(String(b.id));
   });
 
+  listEl.innerHTML = "";
   sorted.forEach(t=>{
     if (String(t.id) === String(currentTaskId)) return;
-    const opt = document.createElement("option");
-    opt.value = String(t.id);
-    opt.textContent = `#${t.id} · ${t.name}`;
-    sel.appendChild(opt);
+
+    const info = phaseInfo(t.phase);
+    const wrap = document.createElement("div");
+    wrap.className = "depItem";
+    wrap.dataset.id = String(t.id);
+    wrap.dataset.search = (`#${t.id} ${t.name||""} ${t.owner||""} ${t.phase||""} ${info.short||""} ${info.full||""}`).toLowerCase();
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = selected.has(String(t.id));
+    cb.addEventListener("change", ()=>{
+      updateDepsPreview();
+    });
+
+    const text = document.createElement("div");
+    text.className = "depText";
+    text.innerHTML = `<div><b>#${escapeHtml(t.id)}</b> · ${escapeHtml(t.name||"")}</div>
+                      <div class="depMeta">${escapeHtml(t.owner||"—")} · ${escapeHtml(info.short||"—")}</div>`;
+
+    wrap.appendChild(cb);
+    wrap.appendChild(text);
+
+    wrap.addEventListener("click", (e)=>{
+      if (e.target && e.target.tagName === "INPUT") return;
+      cb.checked = !cb.checked;
+      updateDepsPreview();
+    });
+
+    listEl.appendChild(wrap);
   });
-}
 
-function buildDepsMultiSelect(currentTaskId, selectedDepsStr){
-  const sel = document.getElementById("te_deps_select");
-  if (!sel) return;
-
-  const selected = depsToSet(selectedDepsStr);
-  sel.innerHTML = "";
-
-  const sorted = [...ALL].slice().sort((a,b)=>{
-    const na = Number(String(a.id).replace(/[^\d.]/g,""));
-    const nb = Number(String(b.id).replace(/[^\d.]/g,""));
-    if (Number.isFinite(na) && Number.isFinite(nb)) return na-nb;
-    return String(a.id).localeCompare(String(b.id));
-  });
-
-  sorted.forEach(t=>{
-    if (String(t.id) === String(currentTaskId)) return;
-    const opt = document.createElement("option");
-    opt.value = String(t.id);
-    opt.textContent = `#${t.id} · ${t.name} · ${t.owner||""}`;
-    opt.selected = selected.has(String(t.id));
-    sel.appendChild(opt);
-  });
-
+  searchEl.value = "";
+  filterDepsList("");
   updateDepsPreview();
 }
 
-function updateDepsPreview(){
-  const txt = readDepsFromSelect();
-  document.getElementById("depsPreview").textContent = txt || "—";
+function filterDepsList(q){
+  const listEl = document.getElementById("depsList");
+  if (!listEl) return;
+  const needle = String(q||"").toLowerCase().trim();
+  for (const item of listEl.children){
+    const hay = item.dataset.search || "";
+    item.style.display = (!needle || hay.includes(needle)) ? "" : "none";
+  }
 }
 
-function readDepsFromSelect(){
-  const sel = document.getElementById("te_deps_select");
-  if (!sel) return "";
-  const vals = [...sel.selectedOptions].map(o=>o.value.trim()).filter(Boolean);
-  return vals.join(",");
+function readDepsFromCheckboxes(){
+  const listEl = document.getElementById("depsList");
+  if (!listEl) return "";
+  const ids = [];
+  for (const item of listEl.children){
+    const cb = item.querySelector('input[type="checkbox"]');
+    if (cb && cb.checked){
+      ids.push(String(item.dataset.id));
+    }
+  }
+  ids.sort((a,b)=>{
+    const na = Number(String(a).replace(/[^\d.]/g,""));
+    const nb = Number(String(b).replace(/[^\d.]/g,""));
+    if (Number.isFinite(na) && Number.isFinite(nb)) return na-nb;
+    return String(a).localeCompare(String(b));
+  });
+  return ids.join(",");
+}
+
+function setAllDepsChecked(flag){
+  const listEl = document.getElementById("depsList");
+  if (!listEl) return;
+  for (const item of listEl.children){
+    if (item.style.display === "none") continue; // רק מה שרואים אחרי פילטר
+    const cb = item.querySelector('input[type="checkbox"]');
+    if (cb) cb.checked = !!flag;
+  }
+  updateDepsPreview();
 }
 
 function addDependencyById(depId){
-  if (!depId) return;
-  const sel = document.getElementById("te_deps_select");
-  if (!sel) return;
+  const listEl = document.getElementById("depsList");
+  if (!listEl) return;
   const idStr = String(depId);
-
-  for (const opt of sel.options){
-    if (opt.value === idStr){
-      opt.selected = true;
+  for (const item of listEl.children){
+    if (String(item.dataset.id) === idStr){
+      const cb = item.querySelector('input[type="checkbox"]');
+      if (cb) cb.checked = true;
       break;
     }
   }
   updateDepsPreview();
   tlog("Dependency added: " + idStr);
+}
+
+function updateDepsPreview(){
+  const txt = readDepsFromCheckboxes();
+  document.getElementById("depsPreview").textContent = txt || "—";
 }
 
 /* Date sync helpers */
@@ -1569,7 +1602,7 @@ function syncFromDatesToNumbers(){
 
   document.getElementById('te_startOffset').value = Math.round(off);
   document.getElementById('te_duration').value = Math.round(dur);
-  updateTaskDatesPreviewInStatus();
+  tlog(`Dates OK: start=${document.getElementById('te_startDate').value} end=${document.getElementById('te_endDate').value} | startOffset=${off} duration=${dur}`);
 }
 function syncFromNumbersToDates(){
   const off = Number(document.getElementById('te_startOffset').value);
@@ -1582,14 +1615,7 @@ function syncFromNumbersToDates(){
 
   document.getElementById('te_startDate').value = fmt(sd);
   document.getElementById('te_endDate').value   = fmt(ed);
-  updateTaskDatesPreviewInStatus();
-}
-function updateTaskDatesPreviewInStatus(){
-  const sd = document.getElementById('te_startDate').value;
-  const ed = document.getElementById('te_endDate').value;
-  const off = document.getElementById('te_startOffset').value;
-  const dur = document.getElementById('te_duration').value;
-  tlog(`Dates OK: start=${sd} end=${ed} | startOffset=${off} duration=${dur}`);
+  tlog(`Dates OK: start=${fmt(sd)} end=${fmt(ed)} | startOffset=${o} duration=${d}`);
 }
 
 function openTaskModal(taskId){
@@ -1609,8 +1635,7 @@ function openTaskModal(taskId){
   setModalNumbersFromTask(t);
   setModalDatesFromTask(t);
 
-  buildDepAddOptions(t.id);
-  buildDepsMultiSelect(t.id, t.deps || "");
+  buildDepsCheckboxList(t.id, t.deps || "");
 
   const bg = document.getElementById('taskModalBg');
   bg.style.display = "flex";
@@ -1651,7 +1676,7 @@ function applyTaskEditsFromModal(){
   let dur = daysBetween(sd, ed);
   if (dur < 1) dur = 1;
 
-  const deps = readDepsFromSelect();
+  const deps = readDepsFromCheckboxes();
 
   t.name = name;
   t.phase = phase;
@@ -1717,21 +1742,18 @@ function duplicateCurrentTask(){
   openTaskModal(newId);
 }
 
-/* ---------- Dependencies UI wiring ---------- */
-document.getElementById("btnAddDep").addEventListener("click", ()=>{
-  const v = document.getElementById("te_dep_add").value;
-  if (!v) return;
-  addDependencyById(v);
+/* Dependencies UI wiring */
+document.getElementById("depsSearch").addEventListener("input", (e)=>{
+  filterDepsList(e.target.value);
 });
-document.getElementById("btnClearDeps").addEventListener("click", ()=>{
-  const sel = document.getElementById("te_deps_select");
-  if (!sel) return;
-  for (const opt of sel.options) opt.selected = false;
-  updateDepsPreview();
-  tlog("Dependencies cleared");
+document.getElementById("depsSelectAll").addEventListener("click", ()=>{
+  setAllDepsChecked(true);
 });
-document.getElementById("te_deps_select").addEventListener("change", updateDepsPreview);
+document.getElementById("depsSelectNone").addEventListener("click", ()=>{
+  setAllDepsChecked(false);
+});
 
+/* Drag&Drop into deps zone */
 const dropZone = document.getElementById("depsDropZone");
 dropZone.addEventListener("dragover", (e)=>{
   e.preventDefault();
@@ -1753,19 +1775,159 @@ dropZone.addEventListener("drop", (e)=>{
   addDependencyById(id);
 });
 
-/* ---------- Date sync wiring ---------- */
+/* Date sync wiring */
 document.getElementById("te_startDate").addEventListener("change", ()=>{ syncFromDatesToNumbers(); });
 document.getElementById("te_endDate").addEventListener("change", ()=>{ syncFromDatesToNumbers(); });
 document.getElementById("te_startOffset").addEventListener("change", ()=>{ syncFromNumbersToDates(); });
 document.getElementById("te_duration").addEventListener("change", ()=>{ syncFromNumbersToDates(); });
 
-/* ---------- Main buttons wiring ---------- */
+/* ---------- PDF Management Export (Print to PDF) ---------- */
+function getKpisForList(list){
+  const milestones = list.filter(t=>!!t.milestone).length;
+  const depsCount = list.reduce((acc,t)=> acc + (String(t.deps||'').split(/[,\s]+/).filter(Boolean).length), 0);
+  const offs = list.map(t=>Number(t.startOffset||0));
+  const ends = list.map(t=>Number(t.startOffset||0)+Math.max(1,Number(t.duration||1)));
+  const minO = offs.length ? Math.min(...offs) : 0;
+  const maxE = ends.length ? Math.max(...ends) : 0;
+  const spanDays = Math.max(0, maxE - minO);
+  return { tasks:list.length, milestones, depsCount, spanDays };
+}
+function canvasToDataUrlSafe(id){
+  const c = document.getElementById(id);
+  if (!c) return "";
+  try{ return c.toDataURL("image/png"); }catch(_){ return ""; }
+}
+function exportManagementPdf(){
+  const list = getFilteredList().slice();
+  list.forEach(calcDatesFromOffsets);
+  const k = getKpisForList(list);
+
+  const imgCats = canvasToDataUrlSafe("chartCats");
+  const imgOwners = canvasToDataUrlSafe("chartOwners");
+  const imgKpis = canvasToDataUrlSafe("chartKPIs");
+
+  const cfg = loadGhCfg();
+  const now = new Date();
+  const stamp = now.toLocaleString();
+
+  const rowsHtml = list.map(t=>{
+    const info = phaseInfo(t.phase);
+    return `
+      <tr>
+        <td>${escapeHtml(t.id)}</td>
+        <td style="direction:rtl;text-align:right">${escapeHtml(t.name||"")}</td>
+        <td>${escapeHtml(t.owner||"")}</td>
+        <td style="direction:rtl;text-align:right" title="${escapeHtml(info.full)}">${escapeHtml(info.short)}</td>
+        <td>${escapeHtml(t.start||"")}</td>
+        <td>${escapeHtml(t.end||"")}</td>
+        <td>${escapeHtml(String(t.deps||""))}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const html = `
+<!doctype html>
+<html lang="he">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Gantt – Management PDF</title>
+<style>
+  body{font-family:Arial,system-ui; margin:24px; color:#111827}
+  h1{margin:0 0 6px 0; font-size:18px; direction:rtl; text-align:right}
+  .sub{color:#374151; font-size:12px; margin-bottom:14px; direction:rtl; text-align:right}
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:12px 0}
+  .kpi{border:1px solid #e5e7eb; border-radius:12px; padding:10px}
+  .kpi .t{font-size:12px; color:#6b7280; direction:rtl; text-align:right}
+  .kpi .v{font-size:22px; font-weight:900; direction:ltr; text-align:left}
+  .charts{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:12px 0}
+  .card{border:1px solid #e5e7eb; border-radius:12px; padding:10px}
+  .ct{font-weight:900; font-size:12px; margin:0 0 8px 0; direction:rtl; text-align:right}
+  img{max-width:100%; height:auto; border-radius:10px; border:1px solid #f1f5f9}
+  table{width:100%; border-collapse:collapse; font-size:12px; margin-top:12px}
+  th,td{border:1px solid #e5e7eb; padding:8px; vertical-align:top}
+  th{background:#f8fafc}
+  .rtl{direction:rtl; text-align:right}
+  @media print{
+    body{margin:12mm}
+    .noPrint{display:none}
+    .charts{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+  <div class="noPrint" style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:10px">
+    <button onclick="window.print()">Print / Save as PDF</button>
+    <button onclick="window.close()">Close</button>
+  </div>
+
+  <h1>AMIR DAVIDI TECHNOLOGIES – דוח ניהולי (Gantt)</h1>
+  <div class="sub">
+    תאריך הפקה: <b>${escapeHtml(stamp)}</b><br/>
+    מקור Git (אם קיים): <b>${escapeHtml(cfg.owner && cfg.repo ? (cfg.owner+"/"+cfg.repo+" ("+cfg.branch+")") : "—")}</b>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="t">כמות משימות</div><div class="v">${k.tasks}</div></div>
+    <div class="kpi"><div class="t">Milestones</div><div class="v">${k.milestones}</div></div>
+    <div class="kpi"><div class="t">כמות תלויות</div><div class="v">${k.depsCount}</div></div>
+    <div class="kpi"><div class="t">טווח (ימים)</div><div class="v">${k.spanDays}</div></div>
+  </div>
+
+  <div class="charts">
+    <div class="card">
+      <p class="ct">משימות לפי קטגוריה</p>
+      ${imgCats ? `<img src="${imgCats}"/>` : `<div>Chart not available</div>`}
+    </div>
+    <div class="card">
+      <p class="ct">משימות לפי Owner</p>
+      ${imgOwners ? `<img src="${imgOwners}"/>` : `<div>Chart not available</div>`}
+    </div>
+    <div class="card" style="grid-column:1 / -1">
+      <p class="ct">מדדים מהירים</p>
+      ${imgKpis ? `<img src="${imgKpis}"/>` : `<div>Chart not available</div>`}
+    </div>
+  </div>
+
+  <h2 class="rtl" style="margin:12px 0 6px 0;font-size:14px">טבלת משימות (לפי הפילטר הנוכחי)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th class="rtl">משימה</th>
+        <th>Owner</th>
+        <th class="rtl">קטגוריה/שלב</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Deps (IDs)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml || `<tr><td colspan="7" class="rtl">אין משימות בתצוגה הנוכחית</td></tr>`}
+    </tbody>
+  </table>
+</body>
+</html>
+  `;
+
+  const w = window.open("", "_blank");
+  if (!w){
+    alert("הדפדפן חסם חלון חדש. אפשר לאפשר Popups ואז לנסות שוב.");
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
+/* ---------- Main wiring ---------- */
 document.getElementById('exportCsv').addEventListener('click', exportCSV);
 document.getElementById('downloadTemplate').addEventListener('click', downloadTemplate);
 document.getElementById('clearLocal').addEventListener('click', clearLocalCache);
 document.getElementById('reset').addEventListener('click', resetAll);
 document.getElementById('loadRepo').addEventListener('click', ghLoadTasks);
 document.getElementById('saveRepo').addEventListener('click', ghSaveTasks);
+document.getElementById('exportPdf').addEventListener('click', exportManagementPdf);
 
 document.getElementById('importBtn').addEventListener('click', async ()=>{
   const f = document.getElementById('importFile').files?.[0];
@@ -1785,7 +1947,7 @@ document.getElementById('saveTaskBtn').addEventListener('click', ()=> applyTaskE
 document.getElementById('deleteTaskBtn').addEventListener('click', deleteCurrentTask);
 document.getElementById('duplicateTaskBtn').addEventListener('click', duplicateCurrentTask);
 
-/* Keyboard shortcuts (FIXED) */
+/* Keyboard shortcuts */
 document.addEventListener('keydown', (e)=>{
   if (e.key === "Escape"){
     if (taskBg.style.display === "flex") closeTaskModal();
@@ -1795,13 +1957,15 @@ document.addEventListener('keydown', (e)=>{
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==="s"){
     if (taskBg.style.display === "flex"){
       e.preventDefault();
-      applyTaskEditsFromModal(); /* <-- FIXED HERE */
+      applyTaskEditsFromModal();
     }
   }
 });
 
-/* ---------- Initial ---------- */
+/* ---------- Charts initial ---------- */
 setCfgHint();
+
+/* ---------- Initial render ---------- */
 render();
 updateCharts();
 </script>
