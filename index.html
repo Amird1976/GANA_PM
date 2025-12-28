@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Gantt – Ghana Energy CERT (Drag & Drop) + Import/Export + GitHub</title>
 <style>
-  /* ===== Version 20 ===== */
+  /* ===== Version 21 (fixed) ===== */
   body{
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     margin:0;background:#f6f7fb;color:#111827;
@@ -50,6 +50,15 @@
   .row.clickable{cursor:pointer;}
   .row.clickable:hover{background:#eef2ff;}
 
+  .dragDep{
+    width:22px;height:22px;border-radius:8px;
+    border:1px solid #d1d5db;background:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px; cursor:grab;
+  }
+  .dragDep:active{cursor:grabbing;}
+  .dragDep:hover{background:#f8fafc;}
+
   .timeline{position:relative;min-height: 40px;border-bottom:1px solid #e5e7eb;background:#fff}
   .ticks{display:flex;position:sticky;top:0;background:#fff;z-index:2}
   .tick{border-right:1px solid #eef2f7;padding:8px 6px;font-size:12px;color:#374151;white-space:nowrap}
@@ -66,8 +75,6 @@
   .handle.right{right:0;border-top-right-radius:10px;border-bottom-right-radius:10px;background:#0b3ea8;cursor:ew-resize}
 
   .hint{padding:10px 12px;font-size:12px;color:#374151;direction:rtl;text-align:right}
-  #legend .lg-item{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:999px;background:#fff;font-size:12px}
-  #legend .sw{width:12px;height:12px;border-radius:4px}
   .dep-layer{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
 
   /* Charts */
@@ -110,7 +117,7 @@
     padding:16px; z-index:50;
   }
   .modal{
-    width:min(820px, 100%);
+    width:min(880px, 100%);
     background:#fff; border-radius:16px;
     border:1px solid #e5e7eb;
     box-shadow:0 20px 70px rgba(0,0,0,.25);
@@ -127,7 +134,7 @@
   .fg{display:flex;flex-direction:column;gap:6px}
   .fg label{font-size:12px;color:#374151; font-weight:700}
   .fg input, .fg select{
-    padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;font-size:14px
+    padding:10px 12px;border:1px solid #d1d5e1;border-radius:10px;font-size:14px
   }
   .modal-ft{
     display:flex; gap:10px; flex-wrap:wrap;
@@ -147,18 +154,42 @@
     overflow:auto;
     max-height:160px;
   }
+
+  /* Dependencies UI */
+  #depsDropZone{
+    border:1px dashed #cbd5e1;
+    border-radius:14px;
+    padding:10px;
+    background:#ffffff;
+    overflow:auto;
+  }
+  #depsDropZone.dragover{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.15);
+    background:#f8fbff;
+  }
+  #te_deps_select{
+    min-height:160px;
+    overflow:auto;
+  }
+  #te_deps_select option{ padding:6px 6px; }
+
+  .depsTop{
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+    margin-bottom:10px;
+  }
+  .depsTop select{ flex:1; min-width:240px; }
 </style>
 </head>
 <body>
 <header>
   <h1>
     AMIR DAVIDI TECHNOLOGIES – גאנט פרויקט Ghana Energy CERT (Drag & Drop)
-    <span class="pill">Version 20</span>
+    <span class="pill">Version 21</span>
   </h1>
   <div class="meta">
-    ✅ גרירה מזיזה משימה | ✅ גרירת קצוות משנה Duration | ✅ חצים לתלויות<br/>
-    ✅ Import/Export CSV | ✅ Load/Save ל-GitHub (tasks.csv) | ✅ לחיצה על משימה פותחת חלון עריכה מקצועי
-    <span class="pill">Hover על גרפים = שם מלא</span>
+    ✅ עריכת משימה עם תאריכים (Date Picker) · ✅ Dependencies ב-Dropdown + Drag&Drop · ✅ Load/Save ל-GitHub (tasks.csv)
+    <span class="pill">בלי מקרא צבעים למעלה</span>
   </div>
 </header>
 
@@ -171,8 +202,6 @@
       <option value="week" selected>שבוע (Week)</option>
       <option value="month">חודש (Month)</option>
     </select>
-
-    <div id="legend" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"></div>
 
     <button class="btn-primary" id="exportCsv">Export CSV</button>
     <button class="btn-ghost" id="settingsBtn">Settings (GitHub)</button>
@@ -221,7 +250,7 @@
       </div>
     </div>
     <div class="hint">
-      טיפ: לדיוק גבוה העבר ל-Zoom "יום". לחץ על שורה/בר כדי לערוך משימה. Import/Drag נשמר מקומית. Save to GIT כותב ל-tasks.csv לפי Settings.
+      איך להוסיף תלות בדרופ: גרור את כפתור ה-➕ ליד משימה מהרשימה השמאלית לתוך תיבת Dependencies בחלון העריכה.
     </div>
   </div>
 </div>
@@ -310,6 +339,16 @@
         </div>
 
         <div class="fg">
+          <label>Start Date (קל לבחור)</label>
+          <input id="te_startDate" type="date" />
+        </div>
+
+        <div class="fg">
+          <label>End Date (קל לבחור)</label>
+          <input id="te_endDate" type="date" />
+        </div>
+
+        <div class="fg">
           <label>Start Offset (days)</label>
           <input id="te_startOffset" type="number" min="0" step="1" />
         </div>
@@ -327,24 +366,29 @@
           </select>
         </div>
 
-        <div class="fg">
-          <label>Dependencies (IDs)</label>
-          <input id="te_deps" placeholder="למשל: 12,15,16" />
+        <div class="fg" style="grid-column:1 / -1">
+          <label>Dependencies (בחר משימות / הוסף / או גרור לכאן)</label>
+
+          <div id="depsDropZone" title="אפשר לגרור לכאן משימה מהרשימה השמאלית (אייקון ➕)">
+            <div class="depsTop">
+              <select id="te_dep_add">
+                <option value="">בחר משימה להוספה…</option>
+              </select>
+              <button class="btn-ghost" id="btnAddDep" type="button">הוסף תלות</button>
+              <button class="btn-warn" id="btnClearDeps" type="button">נקה</button>
+            </div>
+
+            <select id="te_deps_select" multiple size="8"></select>
+
+            <div style="font-size:12px;color:#6b7280;direction:rtl;text-align:right;margin-top:6px">
+              נשמר אוטומטית כ-CSV IDs: <span class="pill" id="depsPreview">—</span>
+            </div>
+          </div>
         </div>
 
         <div class="fg" style="grid-column:1 / -1">
           <label>Notes / הערות</label>
           <input id="te_notes" placeholder="טקסט חופשי" />
-        </div>
-
-        <div class="fg">
-          <label>Start (Calculated)</label>
-          <input id="te_start" disabled />
-        </div>
-
-        <div class="fg">
-          <label>End (Calculated)</label>
-          <input id="te_end" disabled />
         </div>
       </div>
 
@@ -361,7 +405,7 @@
 
 <script>
 /* =========================
-   Version 20 – Perfect Categories + Tooltips
+   Version 21 (fixed)
    ========================= */
 
 const MS_DAY = 86400000;
@@ -379,9 +423,9 @@ const BASE = [
 let ALL = BASE.map(t => ({...t}));
 
 /* Local storage keys */
-const STORE_KEY      = "gantt_tasks_v20_edits";
-const STORE_KEY_CSV  = "gantt_tasks_v20_csv_snapshot";
-const STORE_GH_CFG   = "gantt_github_cfg_v20";
+const STORE_KEY      = "gantt_tasks_v21_edits";
+const STORE_KEY_CSV  = "gantt_tasks_v21_csv_snapshot";
+const STORE_GH_CFG   = "gantt_github_cfg_v21";
 
 /* ---------- Helpers ---------- */
 function daysBetween(a,b){ return Math.round((b-a)/MS_DAY); }
@@ -389,6 +433,12 @@ function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
 function fmt(d){
   const yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
   return `${yyyy}-${mm}-${dd}`;
+}
+function parseDateInput(val){
+  if (!val) return null;
+  const [y,m,d] = val.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m-1, d);
 }
 function calcDatesFromOffsets(t){
   const s = new Date(MIN_START.getTime() + (Number(t.startOffset||0))*MS_DAY);
@@ -402,18 +452,15 @@ function escapeHtml(s){
   }[ch]));
 }
 
-/* ---------- PERFECT category labeling ---------- */
-/* Returns { short, full, groupKey } */
+/* ---------- Category labeling ---------- */
 function phaseInfo(phaseRaw){
   const p = String(phaseRaw||"").replace(/\s+/g," ").trim();
   if (!p) return {short:"Other", full:"Other", groupKey:"Other"};
 
-  // Hebrew "שלב X – ..." or "שלב X - ..."
   const heb = p.match(/שלב\s*([0-9]+)/);
   if (heb){
     const num = heb[1];
     const full = p;
-    // short = "שלב X" + optional tiny hint
     let hint = "";
     const afterDash = p.split(/[–-]/).slice(1).join(" ").trim();
     if (afterDash){
@@ -423,9 +470,7 @@ function phaseInfo(phaseRaw){
     return { short:`שלב ${num}${hint}`, full, groupKey:`P${num}` };
   }
 
-  // numeric only "5.18"
   if (/^\d+(\.\d+)?$/.test(p)){
-    // optional friendly mapping
     const map = {
       "5.18":"Phase 5.18 – Final SSR Approvals",
       "7.18":"Phase 7.18 – Cutover / Go-Live Readiness",
@@ -435,7 +480,6 @@ function phaseInfo(phaseRaw){
     return { short:`${p}`, full, groupKey:`P${String(p).split(".")[0]}` };
   }
 
-  // standard: "6.1 Physical" OR "1. Management"
   const m = p.match(/^(\d+(?:\.\d+)?)\s*[\.\-]?\s*(.*)$/);
   if (m){
     const code = m[1];
@@ -445,16 +489,10 @@ function phaseInfo(phaseRaw){
     return { short, full, groupKey:`P${String(code).split(".")[0]}` };
   }
 
-  // fallback: keep full but shorten for chart
   const full = p;
   const short = p.length > 26 ? (p.slice(0,26)+"…") : p;
   return { short, full, groupKey:"Other" };
 }
-
-/* Used across UI */
-function categoryShort(t){ return phaseInfo(t.phase).short; }
-function categoryFull(t){ return phaseInfo(t.phase).full; }
-function categoryGroupKey(t){ return phaseInfo(t.phase).groupKey; }
 
 function colorForCategoryKey(key){
   const palette = ["#2563eb","#16a34a","#f59e0b","#dc2626","#9333ea","#0891b2","#7c3aed","#0ea5e9","#22c55e","#ea580c","#be123c","#0f766e","#4f46e5","#a16207","#1d4ed8"];
@@ -490,7 +528,7 @@ function persistOne(t){
 }
 function findTask(id){ return ALL.find(x=>String(x.id)===String(id)); }
 
-/* Apply stored edits to BASE */
+/* Apply stored edits */
 (function applyLocal(){
   const edits = loadEdits(); if (!edits) return;
   ALL = ALL.map(t => edits[t.id] ? ({...t, ...edits[t.id]}) : t);
@@ -527,7 +565,7 @@ function buildTicks(pxPerDay){
   tl.appendChild(ticks);
 }
 
-/* ---------- Drag ---------- */
+/* ---------- Drag (schedule) ---------- */
 function attachDrag(barEl, pxPerDay){
   let mode="move", startX=0, origOffset=0, origDuration=0;
 
@@ -581,13 +619,9 @@ function attachDrag(barEl, pxPerDay){
 
 /* ---------- Milestone look ---------- */
 function applyMilestoneStyle(barEl, isMilestone){
-  if (!isMilestone) {
-    barEl.style.borderRadius = "10px";
-    barEl.style.transform = "none";
-    return;
-  }
-  barEl.style.borderRadius = "4px";
-  barEl.style.transform = "rotate(45deg)";
+  if (!isMilestone) { barEl.style.borderRadius="10px"; barEl.style.transform="none"; return; }
+  barEl.style.borderRadius="4px";
+  barEl.style.transform="rotate(45deg)";
 }
 
 /* ---------- Render ---------- */
@@ -604,36 +638,51 @@ function render(){
   );
   const list = !ownerVal ? baseList : baseList.filter(t => (t.owner||'').toLowerCase()===ownerVal);
 
-  // Legend (timeline categories) – show short text but tooltip full
-  const legend=document.getElementById('legend');
-  if (legend){
-    const infos = Array.from(new Map(list.map(t=>{
-      const info = phaseInfo(t.phase);
-      return [info.short, info];
-    })).values()).sort((a,b)=>a.short.localeCompare(b.short));
-    legend.innerHTML='';
-    infos.forEach(info=>{
-      const item=document.createElement('div'); item.className='lg-item';
-      item.title = info.full;
-      const sw=document.createElement('div'); sw.className='sw'; sw.style.background=colorForCategoryKey(info.groupKey + "|" + info.short);
-      const tx=document.createElement('div'); tx.textContent=info.short;
-      item.appendChild(sw); item.appendChild(tx); legend.appendChild(item);
-    });
-  }
-
   // Left list
   const left=document.getElementById('left');
   left.innerHTML='';
+
   const h=document.createElement('div');
   h.className='row'; h.style.fontWeight='900';
-  h.innerHTML = `<div class="meta">ID</div><div class="title">משימה</div><div class="meta">Owner</div>`;
+  h.innerHTML = `<div class="meta">Dep</div><div class="meta">ID</div><div class="title">משימה</div><div class="meta">Owner</div>`;
   left.appendChild(h);
 
   list.forEach(t=>{
     const r=document.createElement('div'); r.className='row clickable';
-    r.title = `Phase: ${categoryFull(t)}`;
-    r.innerHTML = `<div class="meta">#${escapeHtml(t.id)}</div><div class="title">${escapeHtml(t.name)}</div><div class="meta">${escapeHtml(t.owner||'')}</div>`;
-    r.addEventListener('click', ()=> openTaskModal(t.id));
+    r.title = `Phase: ${phaseInfo(t.phase).full}`;
+
+    const depBtn = document.createElement('div');
+    depBtn.className = "dragDep";
+    depBtn.title = "גרור כדי להוסיף כתלות (Dependency)";
+    depBtn.textContent = "➕";
+    depBtn.setAttribute("draggable","true");
+    depBtn.addEventListener("dragstart", (e)=>{
+      e.dataTransfer.setData("text/plain", String(t.id));
+      e.dataTransfer.effectAllowed = "copy";
+    });
+
+    const idEl = document.createElement('div');
+    idEl.className="meta";
+    idEl.textContent = "#"+t.id;
+
+    const titleEl = document.createElement('div');
+    titleEl.className="title";
+    titleEl.innerHTML = escapeHtml(t.name);
+
+    const ownerEl = document.createElement('div');
+    ownerEl.className="meta";
+    ownerEl.textContent = t.owner || "";
+
+    r.appendChild(depBtn);
+    r.appendChild(idEl);
+    r.appendChild(titleEl);
+    r.appendChild(ownerEl);
+
+    r.addEventListener('click', (ev)=>{
+      if (ev.target && ev.target.classList && ev.target.classList.contains("dragDep")) return;
+      openTaskModal(t.id);
+    });
+
     left.appendChild(r);
   });
 
@@ -656,7 +705,7 @@ function render(){
   const totalDays=daysBetween(MIN_START, MAX_END);
   const width=((totalDays+1)*pxPerDay);
 
-  list.forEach((t, idx)=>{
+  list.forEach((t)=>{
     const row=document.createElement('div');
     row.className='bar-row';
     row.style.width=width+'px';
@@ -673,6 +722,7 @@ function render(){
 
     const info = phaseInfo(t.phase);
     bar.style.background = colorForCategoryKey(info.groupKey + "|" + info.short);
+
     bar.title = `#${t.id}\n${t.name}\nPhase: ${info.full}\nOwner: ${t.owner||""}\nStart: ${t.start}  End: ${t.end}\nDeps: ${t.deps||"-"}`;
 
     applyMilestoneStyle(bar, isMs);
@@ -862,10 +912,26 @@ function coerceTask(row){
   const msRaw = pick("milestone","Milestone","אבן דרך","אבן_דרך");
   t.milestone = (String(msRaw ?? "").toLowerCase()==="true" || String(msRaw ?? "").toLowerCase()==="yes" || String(msRaw ?? "")==="1");
 
-  const so = pick("startOffset","start_offset","Start Offset (days)","Start Offset","StartOffset","Start Offset (Days)","startOffset ");
+  const so = pick("startOffset","start_offset","Start Offset (days)","Start Offset","StartOffset","Start Offset (Days)");
   const du = pick("duration","Duration","Duration (days)","Duration Days","משך (ימים)");
-  t.startOffset = Number(so ?? 0);
-  t.duration = Number(du ?? 1);
+
+  const startRaw = pick("start","Start","Start Date","תאריך התחלה");
+  const endRaw   = pick("end","End","End Date","תאריך סיום");
+
+  t.startOffset = (so !== undefined) ? Number(so) : 0;
+  t.duration    = (du !== undefined) ? Number(du) : 1;
+
+  if ((so === undefined || du === undefined) && startRaw && endRaw){
+    const sd = parseDateInput(String(startRaw).trim());
+    const ed = parseDateInput(String(endRaw).trim());
+    if (sd && ed){
+      const off = Math.max(0, daysBetween(MIN_START, sd));
+      let dur = Math.max(1, daysBetween(sd, ed));
+      t.startOffset = off;
+      t.duration = dur;
+    }
+  }
+
   return t;
 }
 
@@ -938,7 +1004,7 @@ function resetAll(){
   alert("✅ איפוס מלא (כולל Settings).");
 }
 
-/* ---------- Mini chart engine + PERFECT tooltips ---------- */
+/* ---------- Mini chart engine + tooltips ---------- */
 const chartTip = document.getElementById("chartTip");
 function showTip(x,y,text){
   chartTip.textContent = text;
@@ -954,9 +1020,7 @@ function showTip(x,y,text){
   chartTip.style.top  = top + "px";
 }
 function hideTip(){ chartTip.style.display = "none"; }
-
 function clearCanvas(ctx){ ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height); }
-
 if (!CanvasRenderingContext2D.prototype.roundRect){
   CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
     r = Math.min(r, w/2, h/2);
@@ -970,8 +1034,6 @@ if (!CanvasRenderingContext2D.prototype.roundRect){
     return this;
   };
 }
-
-/* drawBarChart returns hit boxes for hover */
 function drawBarChart(canvas, items, colorFn, legendEl, labelMode){
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
@@ -986,7 +1048,6 @@ function drawBarChart(canvas, items, colorFn, legendEl, labelMode){
   const gap = 6;
   const barW = Math.max(10, Math.floor((plotW - gap*(barCount-1))/barCount));
 
-  // baseline
   ctx.strokeStyle = "#e5e7eb";
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -995,7 +1056,6 @@ function drawBarChart(canvas, items, colorFn, legendEl, labelMode){
   ctx.stroke();
 
   const hit = [];
-
   items.forEach((it, i)=>{
     const h = Math.round((it.v/maxV) * (plotH-2));
     const x = left + i*(barW+gap);
@@ -1005,29 +1065,21 @@ function drawBarChart(canvas, items, colorFn, legendEl, labelMode){
     ctx.fillStyle = col;
     ctx.fillRect(x, y, barW, h);
 
-    // value
     ctx.fillStyle = "#111827";
     ctx.font = "12px system-ui";
     ctx.textAlign = "center";
     ctx.fillText(String(it.v), x+barW/2, y-4);
 
-    // label
     let lab = it.k;
-    if (labelMode === "short"){
-      lab = it.short || it.k;
-    }
+    if (labelMode === "short") lab = it.short || it.k;
     const shown = lab.length > 18 ? (lab.slice(0,18)+"…") : lab;
     ctx.fillStyle = "#374151";
     ctx.font = "11px system-ui";
     ctx.fillText(shown, x+barW/2, top+plotH+18);
 
-    hit.push({
-      x, y, w:barW, h,
-      tooltip: it.tooltip || `${it.k}: ${it.v}`
-    });
+    hit.push({ x, y, w:barW, h, tooltip: it.tooltip || `${it.k}: ${it.v}` });
   });
 
-  // legend (full labels with tooltips)
   if (legendEl){
     legendEl.innerHTML = "";
     items.slice(0,12).forEach((it, i)=>{
@@ -1043,7 +1095,6 @@ function drawBarChart(canvas, items, colorFn, legendEl, labelMode){
       div.appendChild(dot); div.appendChild(tx);
       legendEl.appendChild(div);
 
-      // hover on legend shows full tooltip too
       div.addEventListener("mousemove", (e)=>{
         const tip = (it.full ? it.full : it.k) + `\nCount: ${it.v}`;
         showTip(e.clientX, e.clientY, tip);
@@ -1052,7 +1103,6 @@ function drawBarChart(canvas, items, colorFn, legendEl, labelMode){
     });
   }
 
-  // canvas hover tooltip
   canvas.onmousemove = (e)=>{
     const rect = canvas.getBoundingClientRect();
     const sx = (e.clientX - rect.left) * (canvas.width / rect.width);
@@ -1066,8 +1116,6 @@ function drawBarChart(canvas, items, colorFn, legendEl, labelMode){
     hideTip();
   };
   canvas.onmouseleave = hideTip;
-
-  return hit;
 }
 
 function drawKPI(canvas, kpis){
@@ -1108,15 +1156,6 @@ function drawKPI(canvas, kpis){
   }
 }
 
-function getCounts(list, keyFn){
-  const m = new Map();
-  list.forEach(t=>{
-    const k = keyFn(t);
-    m.set(k, (m.get(k)||0)+1);
-  });
-  return Array.from(m.entries()).map(([k,v])=>({k,v})).sort((a,b)=>b.v-a.v);
-}
-
 function updateCharts(listOverride){
   const list = listOverride || (()=>{
     const q=(document.getElementById('q').value||'').toLowerCase().trim();
@@ -1130,26 +1169,27 @@ function updateCharts(listOverride){
     return !ownerVal ? baseList : baseList.filter(t => (t.owner||'').toLowerCase()===ownerVal);
   })();
 
-  // Categories: use SHORT key, keep FULL for tooltip
-  const catMap = new Map(); // short -> {short, full, v, groupKey}
+  const catMap = new Map();
   list.forEach(t=>{
     const info = phaseInfo(t.phase);
-    const key = info.short; // chart key = short
+    const key = info.short;
     const cur = catMap.get(key);
     if (!cur){
       catMap.set(key, {k:key, short:info.short, full:info.full, groupKey:info.groupKey, v:1});
     }else{
       cur.v++;
-      // keep the "longest" full for best info
       if ((info.full||"").length > (cur.full||"").length) cur.full = info.full;
     }
   });
   const cats = Array.from(catMap.values()).sort((a,b)=>b.v-a.v).slice(0,10);
 
-  const owners = getCounts(list, t=>(t.owner||"—")).slice(0,10).map(x=>({
-    ...x,
-    tooltip: `Owner: ${x.k}\nTasks: ${x.v}`
-  }));
+  const ownersMap = new Map();
+  list.forEach(t=>{
+    const k = (t.owner||"—");
+    ownersMap.set(k, (ownersMap.get(k)||0)+1);
+  });
+  const owners = Array.from(ownersMap.entries()).map(([k,v])=>({k,v, tooltip:`Owner: ${k}\nTasks: ${v}`}))
+    .sort((a,b)=>b.v-a.v).slice(0,10);
 
   drawBarChart(
     document.getElementById('chartCats'),
@@ -1157,7 +1197,7 @@ function updateCharts(listOverride){
       ...it,
       tooltip: `Category (FULL): ${it.full}\nCategory (SHORT): ${it.short}\nTasks: ${it.v}`
     })),
-    (k, i)=>{
+    (k)=>{
       const it = cats.find(x=>x.k===k) || {};
       return colorForCategoryKey((it.groupKey||"Other") + "|" + k);
     },
@@ -1215,7 +1255,6 @@ function logStatus(msg){
   const ts = new Date().toLocaleTimeString();
   box.textContent = `[${ts}] ${msg}\n` + box.textContent;
 }
-
 function buildRawUrl(cfg){
   return `https://raw.githubusercontent.com/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/${encodeURIComponent(cfg.branch)}/${cfg.path.replace(/^\/+/,'')}`;
 }
@@ -1223,7 +1262,6 @@ function buildApiUrl(cfg){
   const p = cfg.path.replace(/^\/+/,'');
   return `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${p}?ref=${encodeURIComponent(cfg.branch)}`;
 }
-
 async function ghLoadTasks(){
   const cfg = loadGhCfg();
   if (!cfg.owner || !cfg.repo || !cfg.branch || !cfg.path){
@@ -1272,7 +1310,6 @@ async function ghLoadTasks(){
   }
   await importCSVFromText(content, "API");
 }
-
 async function ghSaveTasks(){
   const cfg = loadGhCfg();
   if (!cfg.owner || !cfg.repo || !cfg.branch || !cfg.path){
@@ -1314,7 +1351,7 @@ async function ghSaveTasks(){
 
   const putUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${cfg.path.replace(/^\/+/,'')}`;
   const body = {
-    message: `Update ${cfg.path} via Gantt v20`,
+    message: `Update ${cfg.path} via Gantt v21`,
     content: contentB64,
     branch: cfg.branch
   };
@@ -1360,7 +1397,6 @@ function closeSettings(){
   modalBg.style.display = "none";
   modalBg.setAttribute("aria-hidden","true");
 }
-
 document.getElementById('settingsBtn').addEventListener('click', openSettings);
 document.getElementById('closeSettings').addEventListener('click', closeSettings);
 document.getElementById('closeSettings2').addEventListener('click', closeSettings);
@@ -1379,7 +1415,6 @@ document.getElementById('saveSettings').addEventListener('click', ()=>{
   logStatus("Saved Settings: " + cfgSummary(cfg));
   alert("✅ Settings נשמרו בדפדפן.");
 });
-
 document.getElementById('forgetToken').addEventListener('click', ()=>{
   const cfg = loadGhCfg();
   cfg.token = "";
@@ -1389,7 +1424,6 @@ document.getElementById('forgetToken').addEventListener('click', ()=>{
   logStatus("Token removed from localStorage");
   alert("✅ Token נמחק מהמכשיר.");
 });
-
 document.getElementById('testLoadRaw').addEventListener('click', async ()=>{
   const cfg = loadGhCfg();
   if (!cfg.owner || !cfg.repo){ alert("הכנס Owner/Repo קודם."); return; }
@@ -1404,7 +1438,6 @@ document.getElementById('testLoadRaw').addEventListener('click', async ()=>{
     alert("RAW error");
   }
 });
-
 document.getElementById('testApi').addEventListener('click', async ()=>{
   const cfg = loadGhCfg();
   if (!cfg.token){ alert("הכנס Token קודם."); return; }
@@ -1419,15 +1452,144 @@ document.getElementById('testApi').addEventListener('click', async ()=>{
 });
 
 /* =========================
-   Task Editor (Professional)
+   Task Editor
    ========================= */
 let CURRENT_EDIT_ID = null;
-
 function tlog(msg){
   const box = document.getElementById('taskStatusBox');
-  if (!box) return;
   const ts = new Date().toLocaleTimeString();
   box.textContent = `[${ts}] ${msg}\n` + box.textContent;
+}
+
+/* Dependencies helpers */
+function depsToArray(depsStr){
+  return String(depsStr||"").split(/[,\s]+/).map(x=>x.trim()).filter(Boolean);
+}
+function depsToSet(depsStr){ return new Set(depsToArray(depsStr)); }
+
+function buildDepAddOptions(currentTaskId){
+  const sel = document.getElementById("te_dep_add");
+  if (!sel) return;
+  sel.innerHTML = `<option value="">בחר משימה להוספה…</option>`;
+
+  const sorted = [...ALL].slice().sort((a,b)=>{
+    const na = Number(String(a.id).replace(/[^\d.]/g,""));
+    const nb = Number(String(b.id).replace(/[^\d.]/g,""));
+    if (Number.isFinite(na) && Number.isFinite(nb)) return na-nb;
+    return String(a.id).localeCompare(String(b.id));
+  });
+
+  sorted.forEach(t=>{
+    if (String(t.id) === String(currentTaskId)) return;
+    const opt = document.createElement("option");
+    opt.value = String(t.id);
+    opt.textContent = `#${t.id} · ${t.name}`;
+    sel.appendChild(opt);
+  });
+}
+
+function buildDepsMultiSelect(currentTaskId, selectedDepsStr){
+  const sel = document.getElementById("te_deps_select");
+  if (!sel) return;
+
+  const selected = depsToSet(selectedDepsStr);
+  sel.innerHTML = "";
+
+  const sorted = [...ALL].slice().sort((a,b)=>{
+    const na = Number(String(a.id).replace(/[^\d.]/g,""));
+    const nb = Number(String(b.id).replace(/[^\d.]/g,""));
+    if (Number.isFinite(na) && Number.isFinite(nb)) return na-nb;
+    return String(a.id).localeCompare(String(b.id));
+  });
+
+  sorted.forEach(t=>{
+    if (String(t.id) === String(currentTaskId)) return;
+    const opt = document.createElement("option");
+    opt.value = String(t.id);
+    opt.textContent = `#${t.id} · ${t.name} · ${t.owner||""}`;
+    opt.selected = selected.has(String(t.id));
+    sel.appendChild(opt);
+  });
+
+  updateDepsPreview();
+}
+
+function updateDepsPreview(){
+  const txt = readDepsFromSelect();
+  document.getElementById("depsPreview").textContent = txt || "—";
+}
+
+function readDepsFromSelect(){
+  const sel = document.getElementById("te_deps_select");
+  if (!sel) return "";
+  const vals = [...sel.selectedOptions].map(o=>o.value.trim()).filter(Boolean);
+  return vals.join(",");
+}
+
+function addDependencyById(depId){
+  if (!depId) return;
+  const sel = document.getElementById("te_deps_select");
+  if (!sel) return;
+  const idStr = String(depId);
+
+  for (const opt of sel.options){
+    if (opt.value === idStr){
+      opt.selected = true;
+      break;
+    }
+  }
+  updateDepsPreview();
+  tlog("Dependency added: " + idStr);
+}
+
+/* Date sync helpers */
+function setModalDatesFromTask(t){
+  calcDatesFromOffsets(t);
+  document.getElementById('te_startDate').value = t.start || "";
+  document.getElementById('te_endDate').value   = t.end || "";
+}
+function setModalNumbersFromTask(t){
+  document.getElementById('te_startOffset').value = Number(t.startOffset||0);
+  document.getElementById('te_duration').value    = Number(t.duration||1);
+}
+function syncFromDatesToNumbers(){
+  const sd = parseDateInput(document.getElementById('te_startDate').value);
+  const ed = parseDateInput(document.getElementById('te_endDate').value);
+  if (!sd || !ed) return;
+
+  let off = daysBetween(MIN_START, sd);
+  if (off < 0) off = 0;
+
+  let dur = daysBetween(sd, ed);
+  if (dur < 1){
+    dur = 1;
+    const fixedEnd = new Date(sd.getTime() + MS_DAY);
+    document.getElementById('te_endDate').value = fmt(fixedEnd);
+  }
+
+  document.getElementById('te_startOffset').value = Math.round(off);
+  document.getElementById('te_duration').value = Math.round(dur);
+  updateTaskDatesPreviewInStatus();
+}
+function syncFromNumbersToDates(){
+  const off = Number(document.getElementById('te_startOffset').value);
+  const dur = Number(document.getElementById('te_duration').value);
+  const o = Number.isFinite(off) ? Math.max(0, Math.round(off)) : 0;
+  const d = Number.isFinite(dur) ? Math.max(1, Math.round(dur)) : 1;
+
+  const sd = new Date(MIN_START.getTime() + o*MS_DAY);
+  const ed = new Date(sd.getTime() + d*MS_DAY);
+
+  document.getElementById('te_startDate').value = fmt(sd);
+  document.getElementById('te_endDate').value   = fmt(ed);
+  updateTaskDatesPreviewInStatus();
+}
+function updateTaskDatesPreviewInStatus(){
+  const sd = document.getElementById('te_startDate').value;
+  const ed = document.getElementById('te_endDate').value;
+  const off = document.getElementById('te_startOffset').value;
+  const dur = document.getElementById('te_duration').value;
+  tlog(`Dates OK: start=${sd} end=${ed} | startOffset=${off} duration=${dur}`);
 }
 
 function openTaskModal(taskId){
@@ -1435,20 +1597,20 @@ function openTaskModal(taskId){
   if (!t){ alert("משימה לא נמצאה"); return; }
 
   CURRENT_EDIT_ID = String(taskId);
-  calcDatesFromOffsets(t);
 
   document.getElementById('taskModalTitle').textContent = `עריכת משימה #${t.id}`;
   document.getElementById('te_id').value = t.id;
   document.getElementById('te_name').value = t.name || "";
   document.getElementById('te_phase').value = t.phase || "";
   document.getElementById('te_owner').value = t.owner || "";
-  document.getElementById('te_startOffset').value = Number(t.startOffset || 0);
-  document.getElementById('te_duration').value = Number(t.duration || 1);
-  document.getElementById('te_deps').value = t.deps || "";
   document.getElementById('te_milestone').value = t.milestone ? "1" : "0";
   document.getElementById('te_notes').value = t.notes || "";
-  document.getElementById('te_start').value = t.start || "";
-  document.getElementById('te_end').value = t.end || "";
+
+  setModalNumbersFromTask(t);
+  setModalDatesFromTask(t);
+
+  buildDepAddOptions(t.id);
+  buildDepsMultiSelect(t.id, t.deps || "");
 
   const bg = document.getElementById('taskModalBg');
   bg.style.display = "flex";
@@ -1472,30 +1634,35 @@ function applyTaskEditsFromModal(){
   const name = document.getElementById('te_name').value.trim();
   const phase = document.getElementById('te_phase').value.trim();
   const owner = document.getElementById('te_owner').value.trim();
-  const deps  = document.getElementById('te_deps').value.trim();
   const notes = document.getElementById('te_notes').value.trim();
-
-  const startOffset = Number(document.getElementById('te_startOffset').value);
-  const duration    = Number(document.getElementById('te_duration').value);
-  const milestone   = document.getElementById('te_milestone').value === "1";
+  const milestone = document.getElementById('te_milestone').value === "1";
 
   if (!name){ alert("שם משימה חובה"); return null; }
-  if (!Number.isFinite(startOffset) || startOffset < 0){ alert("StartOffset לא תקין"); return null; }
-  if (!Number.isFinite(duration) || duration < 1){ alert("Duration לא תקין"); return null; }
+
+  const sd = parseDateInput(document.getElementById('te_startDate').value);
+  const ed = parseDateInput(document.getElementById('te_endDate').value);
+  if (!sd || !ed){
+    alert("בחר Start Date ו-End Date");
+    return null;
+  }
+
+  let off = daysBetween(MIN_START, sd);
+  if (off < 0) off = 0;
+  let dur = daysBetween(sd, ed);
+  if (dur < 1) dur = 1;
+
+  const deps = readDepsFromSelect();
 
   t.name = name;
   t.phase = phase;
   t.owner = owner;
-  t.deps = deps;
   t.notes = notes;
-  t.startOffset = Math.round(startOffset);
-  t.duration = Math.round(duration);
   t.milestone = milestone;
+  t.startOffset = Math.round(off);
+  t.duration = Math.round(dur);
+  t.deps = deps;
 
   calcDatesFromOffsets(t);
-  document.getElementById('te_start').value = t.start;
-  document.getElementById('te_end').value = t.end;
-
   persistOne(t);
   rebuildOwnerOptions(ALL);
   render();
@@ -1509,11 +1676,10 @@ function deleteCurrentTask(){
   const t = findTask(CURRENT_EDIT_ID);
   if (!t) return;
 
-  const ok = confirm(`למחוק את משימה #${t.id}?\nזה יימחק מהתצוגה ומה-Local edits.`);
+  const ok = confirm(`למחוק את משימה #${t.id}?`);
   if (!ok) return;
 
   ALL = ALL.filter(x => String(x.id) !== String(CURRENT_EDIT_ID));
-
   try{
     const edits = loadEdits() || {};
     delete edits[CURRENT_EDIT_ID];
@@ -1532,7 +1698,6 @@ function nextNumericId(){
   const maxN = nums.length ? Math.max(...nums) : 0;
   return String(maxN + 1);
 }
-
 function duplicateCurrentTask(){
   if (!CURRENT_EDIT_ID) return;
   const t = findTask(CURRENT_EDIT_ID);
@@ -1551,6 +1716,48 @@ function duplicateCurrentTask(){
   tlog(`Duplicated to #${newId}.`);
   openTaskModal(newId);
 }
+
+/* ---------- Dependencies UI wiring ---------- */
+document.getElementById("btnAddDep").addEventListener("click", ()=>{
+  const v = document.getElementById("te_dep_add").value;
+  if (!v) return;
+  addDependencyById(v);
+});
+document.getElementById("btnClearDeps").addEventListener("click", ()=>{
+  const sel = document.getElementById("te_deps_select");
+  if (!sel) return;
+  for (const opt of sel.options) opt.selected = false;
+  updateDepsPreview();
+  tlog("Dependencies cleared");
+});
+document.getElementById("te_deps_select").addEventListener("change", updateDepsPreview);
+
+const dropZone = document.getElementById("depsDropZone");
+dropZone.addEventListener("dragover", (e)=>{
+  e.preventDefault();
+  dropZone.classList.add("dragover");
+  e.dataTransfer.dropEffect = "copy";
+});
+dropZone.addEventListener("dragleave", ()=>{
+  dropZone.classList.remove("dragover");
+});
+dropZone.addEventListener("drop", (e)=>{
+  e.preventDefault();
+  dropZone.classList.remove("dragover");
+  const id = e.dataTransfer.getData("text/plain");
+  if (!id) return;
+  if (CURRENT_EDIT_ID && String(id) === String(CURRENT_EDIT_ID)){
+    tlog("Cannot add self dependency.");
+    return;
+  }
+  addDependencyById(id);
+});
+
+/* ---------- Date sync wiring ---------- */
+document.getElementById("te_startDate").addEventListener("change", ()=>{ syncFromDatesToNumbers(); });
+document.getElementById("te_endDate").addEventListener("change", ()=>{ syncFromDatesToNumbers(); });
+document.getElementById("te_startOffset").addEventListener("change", ()=>{ syncFromNumbersToDates(); });
+document.getElementById("te_duration").addEventListener("change", ()=>{ syncFromNumbersToDates(); });
 
 /* ---------- Main buttons wiring ---------- */
 document.getElementById('exportCsv').addEventListener('click', exportCSV);
@@ -1578,7 +1785,7 @@ document.getElementById('saveTaskBtn').addEventListener('click', ()=> applyTaskE
 document.getElementById('deleteTaskBtn').addEventListener('click', deleteCurrentTask);
 document.getElementById('duplicateTaskBtn').addEventListener('click', duplicateCurrentTask);
 
-// keyboard shortcuts
+/* Keyboard shortcuts (FIXED) */
 document.addEventListener('keydown', (e)=>{
   if (e.key === "Escape"){
     if (taskBg.style.display === "flex") closeTaskModal();
@@ -1588,7 +1795,7 @@ document.addEventListener('keydown', (e)=>{
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==="s"){
     if (taskBg.style.display === "flex"){
       e.preventDefault();
-      applyTaskEditsFromModal();
+      applyTaskEditsFromModal(); /* <-- FIXED HERE */
     }
   }
 });
