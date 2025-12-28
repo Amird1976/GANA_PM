@@ -52,27 +52,27 @@ id,phase,name,owner,startOffset,duration,start,end,deps,milestone,notes
 51,5.18,אישור דוחות SSR סופיים מול הארגונים,צוות יעוץ,55,60,2026-03-01,2026-04-30,50,0,
 52,6. Core Build,הקמת מרכז ה-CERT (Core DC),Indigo Eng,0,40,2026-01-05,2026-02-14,,0,
 53,6.1 Physical,"התקנת Racks, כבילה וחשמל",Local Ops,95,7,2026-04-10,2026-04-17,27,0,
-54,6.2 Compute,התקנת שרתי Dell R660 ו-vSAN,Indigo Eng,102,10,2026-04-17,2026-04-27,53,0,
+54,6.2 Compute,התקנת שרתי Dell R660 ו-vSAN,Indigo Eng,102,91,2026-04-17,2026-07-17,53,0,
 55,6.3 Security,התקנת Fortinet Core והגדרת VPN Gateway,Security Eng,112,7,2026-04-27,2026-05-04,54,0,
-56,6.4 Apps,פריסת IBM QRadar Console/EP,Indigo Eng,119,10,2026-05-04,2026-05-14,55,0,
+56,6.4 Apps,פריסת IBM QRadar Console/EP,Indigo Eng,119,57,2026-05-04,2026-06-30,55,0,
 57,6.5 Apps,"התקנת CyConcerto, CyScan, CyShare",Elta Eng,129,10,2026-05-14,2026-05-24,56,0,
 58,6.6 NOC,הקמת ה-SOC הפיזי (קיר וידאו/ריהוט),Local Ops,102,10,2026-04-17,2026-04-27,53,0,
 59,7. Remote Sites,אינטגרציית 17 אתרי קצה,Indigo Eng,0,60,2026-01-05,2026-03-06,,0,
 60,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: VRA,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-61,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: GRIDCo,Indigo Eng,95,29,2026-04-10,2026-05-09,"51, 27",0,Install & connect
-62,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: ECG,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-63,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: NEDCo,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-64,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: BPA,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-65,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: GNPC,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-66,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: GNGC,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-67,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: BOST,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-68,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: Energy Commission,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-69,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: PURC,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-70,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: MoE,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-71,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: VRA-Generation,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-72,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: Volta Aluminium,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-73,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: Tema Oil Refinery,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
-74,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: Ghana Gas,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
+61,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: GRIDCo,Indigo Eng,95,51,2026-04-10,2026-05-31,"51, 27",0,Install & connect
+62,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: ECG,Indigo Eng,95,45,2026-04-10,2026-05-25,"51, 27",0,Install & connect
+63,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: NEDCo,Indigo Eng,95,42,2026-04-10,2026-05-22,"51, 27",0,Install & connect
+64,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: BPA,Indigo Eng,95,47,2026-04-10,2026-05-27,"51, 27",0,Install & connect
+65,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: GNPC,Indigo Eng,95,43,2026-04-10,2026-05-23,"51, 27",0,Install & connect
+66,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: GNGC,Indigo Eng,95,54,2026-04-10,2026-06-03,"51, 27",0,Install & connect
+67,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: BOST,Indigo Eng,95,54,2026-04-10,2026-06-03,"51, 27",0,Install & connect
+68,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: Energy Commission,Indigo Eng,114,4,2026-04-29,2026-05-03,"51, 27",1,Install & connect
+69,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: PURC,Indigo Eng,95,39,2026-04-10,2026-05-19,"51, 27",0,Install & connect
+70,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: MoE,Indigo Eng,95,45,2026-04-10,2026-05-25,"51, 27",0,Install & connect
+71,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: VRA-Generation,Indigo Eng,95,29,2026-04-10,2026-05-09,"51, 27",0,Install & connect
+72,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: Volta Aluminium,Indigo Eng,95,24,2026-04-10,2026-05-04,"51, 27",0,Install & connect
+73,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: Tema Oil Refinery,Indigo Eng,95,46,2026-04-10,2026-05-26,"51, 27",0,Install & connect
+74,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: Ghana Gas,Indigo Eng,95,46,2026-04-10,2026-05-26,"51, 27",0,Install & connect
 75,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: Takoradi Plant,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
 76,שלב 7 – תתי-שלבים 7.1–7.17,התקנת ציוד (FortiGate 80F) באתר: Karpowership,Indigo Eng,95,4,2026-04-10,2026-04-14,"51, 27",0,Install & connect
 77,7.18,הקמת VPN Tunnels ואימות תקשורת,Security Eng,99,10,2026-04-14,2026-04-24,76,0,
